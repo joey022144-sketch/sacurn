@@ -560,12 +560,53 @@ tbody tr:hover td{background:var(--acc-dim)}
   </div>
   <div class="card">
     <div class="card-hd"><div class="card-ttl">5% 重大性原則</div></div>
+    <div class="alert al-b">可排除項目合計不得超過全生命週期總排放 5%。通勤從運輸頁自動帶入。</div>
     <div class="g3">
       <div class="fg"><label>工人通勤 (kgCO₂e)</label><input type="number" id="EX-c" placeholder="自動帶入" oninput="cExcl()"></div>
       <div class="fg"><label>辦公文具 (kgCO₂e)</label><input type="number" id="EX-s" placeholder="0" oninput="cExcl()"></div>
       <div class="fg"><label>冷媒逸散 (kgCO₂e)</label><input type="number" id="EX-r" placeholder="0" oninput="cExcl()"></div>
     </div>
     <div id="EX-res" style="font-size:13px;color:var(--muted)">請先完成生命週期計算。</div>
+  </div>
+
+  <!-- C-2 DQI 評分 -->
+  <div class="card">
+    <div class="card-hd"><div class="card-ttl">C-2 數據品質指標（DQI）評分</div></div>
+    <div class="alert al-b">依據 ISO 14044，評分 1（最佳）～5（最差），DQI ≤ 2 高品質、≤ 3 中品質、> 3 低品質。</div>
+    <div class="fg"><label>評估對象</label><input type="text" id="DQ-n" placeholder="例：混凝土用量、柴油耗量"></div>
+    <div class="g3">
+      <div class="fg"><label>可靠性 (1–5)</label><input type="number" id="DQ1" min="1" max="5" oninput="cDQI()"></div>
+      <div class="fg"><label>完整性 (1–5)</label><input type="number" id="DQ2" min="1" max="5" oninput="cDQI()"></div>
+      <div class="fg"><label>時間代表性 (1–5)</label><input type="number" id="DQ3" min="1" max="5" oninput="cDQI()"></div>
+    </div>
+    <div class="g2">
+      <div class="fg"><label>地理代表性 (1–5)</label><input type="number" id="DQ4" min="1" max="5" oninput="cDQI()"></div>
+      <div class="fg"><label>技術代表性 (1–5)</label><input type="number" id="DQ5" min="1" max="5" oninput="cDQI()"></div>
+    </div>
+    <div class="g2">
+      <div class="cbox"><div class="cbox-n" id="DQ-sc">—</div><div class="cbox-l" id="DQ-gr">DQI 總分</div></div>
+      <div style="display:flex;align-items:center"><button class="btn btn-p" onclick="saveDQI()">儲存評估記錄</button></div>
+    </div>
+    <div class="tbl-wrap" style="margin-top:10px"><table>
+      <colgroup><col style="width:46%"><col style="width:24%"><col style="width:30%"></colgroup>
+      <thead><tr><th>評估對象</th><th>DQI 總分</th><th>品質等級</th></tr></thead>
+      <tbody id="DQ-tb"><tr><td colspan="3" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr></tbody>
+    </table></div>
+  </div>
+
+  <!-- C-4 不確定性分析 -->
+  <div class="card">
+    <div class="card-hd"><div class="card-ttl">C-4 不確定性分析（算術平方根法）</div></div>
+    <div class="alert al-b">依據 CFP-PCR 建築物 V3.0，各排放類別設定不確定度（%），系統自動計算整體不確定度。<br>公式：整體不確定度 = √Σ(排放佔比 × 不確定度)²</div>
+    <div style="background:#141820;border:1px solid var(--bdr);border-radius:8px;padding:12px 14px;margin-bottom:12px">
+      <div style="font-size:11px;font-weight:600;color:var(--muted);margin-bottom:10px;text-transform:uppercase;letter-spacing:.04em">各類別排放量與不確定度設定</div>
+      <div id="UC-table"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <button class="btn btn-p" onclick="calcUncertainty()">計算整體不確定度</button>
+      <button class="btn" onclick="setDefaultUncertainty()">套用預設值</button>
+    </div>
+    <div id="UC-res" style="font-size:13px;color:var(--muted)">請填入各類別不確定度後點「計算」。</div>
   </div>
 </div>
 
@@ -744,7 +785,7 @@ function nav(p,btn){
   if(p==='set-mat'){renderMatSet();}
   if(p==='set-vtype'){renderVtypeSet();}
   if(p==='ev'){renderEvSummary();renderChecklist();}
-  if(p==='comp')updateComp();
+  if(p==='comp'){updateComp();renderUCTable();}
   if(p==='lc'){syncElecCoeffToLC();}
 }
 function itab(t,btn){
@@ -1169,6 +1210,143 @@ function applyAI(cat){
 }
 
 // ══ Compliance ══
+
+// ══ C-2 DQI ══
+function cDQI(){
+  var vs=[1,2,3,4,5].map(function(i){return parseFloat(document.getElementById('DQ'+i).value)||0;}).filter(function(v){return v>0;});
+  if(!vs.length){document.getElementById('DQ-sc').textContent='—';return;}
+  var avg = vs.reduce(function(a,b){return a+b;},0)/5;
+  var score = (6-avg).toFixed(2);
+  document.getElementById('DQ-sc').textContent = score;
+  var grade = parseFloat(score)<=2?'高品質':parseFloat(score)<=3?'中品質':'低品質';
+  document.getElementById('DQ-gr').textContent = 'DQI 總分 — '+grade;
+}
+function saveDQI(){
+  var name=document.getElementById('DQ-n').value||'未命名';
+  var sc=document.getElementById('DQ-sc').textContent;
+  if(sc==='—'){alert('請先完成評分');return;}
+  var g=parseFloat(sc)<=2?'高品質':parseFloat(sc)<=3?'中品質':'低品質';
+  dqiRecs.push({name:name,sc:sc,g:g});
+  var tb=document.getElementById('DQ-tb');
+  if(tb) tb.innerHTML=dqiRecs.map(function(r){
+    return '<tr><td>'+r.name+'</td><td>'+r.sc+'</td><td><span class="tag '+(r.g==='高品質'?'tg':r.g==='中品質'?'ta':'tr')+'">'+r.g+'</span></td></tr>';
+  }).join('');
+  var cdqi=document.getElementById('CDQI');
+  if(cdqi){cdqi.textContent=g;cdqi.className='tag '+(g==='高品質'?'tg':g==='中品質'?'ta':'tr');}
+  // 清空輸入
+  document.getElementById('DQ-n').value='';
+  [1,2,3,4,5].forEach(function(i){document.getElementById('DQ'+i).value='';});
+  document.getElementById('DQ-sc').textContent='—';
+  saveToStorage();
+}
+
+// ══ C-4 不確定性分析 ══
+var ucValues = {mat:15, eng:5, wst:20, trp:10, per:20}; // 預設值
+
+function renderUCTable(){
+  var matT=matData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var engT=engData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var wstT=wstData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var trpT=trpData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var perT=perData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var total=matT+engT+wstT+trpT+perT;
+
+  var items=[
+    {cat:'mat',name:'工程材料',val:matT,color:'#378ADD'},
+    {cat:'eng',name:'能源消耗',val:engT,color:'#1D9E75'},
+    {cat:'wst',name:'廢棄物',val:wstT,color:'#BA7517'},
+    {cat:'trp',name:'運輸車輛',val:trpT,color:'#7F77DD'},
+    {cat:'per',name:'人員現場',val:perT,color:'#D85A30'},
+  ];
+
+  var tbl=document.getElementById('UC-table');
+  if(!tbl) return;
+
+  tbl.innerHTML='<table style="width:100%;border-collapse:collapse;font-size:13px">'
+    +'<thead><tr style="background:#0f1117">'
+    +'<th style="padding:8px 10px;text-align:left;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">排放類別</th>'
+    +'<th style="padding:8px 10px;text-align:right;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">排放量(tCO₂e)</th>'
+    +'<th style="padding:8px 10px;text-align:right;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">佔比(%)</th>'
+    +'<th style="padding:8px 10px;text-align:center;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">不確定度(%)</th>'
+    +'<th style="padding:8px 10px;text-align:right;color:var(--muted);font-size:11px;font-weight:600;text-transform:uppercase">加權貢獻</th>'
+    +'</tr></thead><tbody>'
+    +items.map(function(it){
+      var pct=total>0?(it.val/total*100):0;
+      var contrib=pct/100*(ucValues[it.cat]||0);
+      return '<tr style="border-bottom:1px solid var(--bdr)">'
+        +'<td style="padding:8px 10px"><div style="display:flex;align-items:center;gap:7px">'
+        +'<div style="width:8px;height:8px;border-radius:50%;background:'+it.color+'"></div>'+it.name+'</div></td>'
+        +'<td style="padding:8px 10px;text-align:right;color:var(--txt)">'+it.val.toFixed(3)+'</td>'
+        +'<td style="padding:8px 10px;text-align:right;color:var(--muted)">'+pct.toFixed(1)+'%</td>'
+        +'<td style="padding:8px 10px;text-align:center">'
+        +'<div style="display:flex;align-items:center;justify-content:center;gap:4px">'
+        +'<input type="number" value="'+(ucValues[it.cat]||0)+'" min="0" max="100" step="1" '
+        +'id="uc-inp-'+it.cat+'" '
+        +'style="width:65px;padding:4px 8px;font-size:13px;border:1px solid var(--bdr2);border-radius:5px;background:var(--card);color:var(--txt);text-align:center;font-family:inherit" '
+        +'oninput="ucValues.'+it.cat+'=parseFloat(this.value)||0">'
+        +'<span style="color:var(--muted);font-size:12px">%</span>'
+        +'</div></td>'
+        +'<td style="padding:8px 10px;text-align:right;color:var(--muted);font-size:12px">'+contrib.toFixed(2)+'</td>'
+        +'</tr>';
+    }).join('')
+    +'<tr style="background:#141820;font-weight:600">'
+    +'<td style="padding:8px 10px">合計</td>'
+    +'<td style="padding:8px 10px;text-align:right">'+total.toFixed(3)+'</td>'
+    +'<td style="padding:8px 10px;text-align:right">100%</td>'
+    +'<td style="padding:8px 10px"></td>'
+    +'<td style="padding:8px 10px"></td>'
+    +'</tr>'
+    +'</tbody></table>';
+}
+
+function setDefaultUncertainty(){
+  ucValues={mat:15,eng:5,wst:20,trp:10,per:20};
+  renderUCTable();
+}
+
+function calcUncertainty(){
+  var matT=matData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var engT=engData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var wstT=wstData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var trpT=trpData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var perT=perData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var total=matT+engT+wstT+trpT+perT;
+  var el=document.getElementById('UC-res');
+
+  if(total<=0){
+    if(el) el.textContent='請先輸入排放量資料。';
+    return;
+  }
+
+  var items=[
+    {name:'工程材料',val:matT,uc:ucValues.mat},
+    {name:'能源消耗',val:engT,uc:ucValues.eng},
+    {name:'廢棄物',val:wstT,uc:ucValues.wst},
+    {name:'運輸車輛',val:trpT,uc:ucValues.trp},
+    {name:'人員現場',val:perT,uc:ucValues.per},
+  ];
+
+  var sumSq=0;
+  items.forEach(function(it){
+    var wi=it.val/total;
+    sumSq+=Math.pow(wi*(it.uc/100),2);
+  });
+
+  var overall=(Math.sqrt(sumSq)*100).toFixed(1);
+  var grade=parseFloat(overall)<=10?'tg':parseFloat(overall)<=20?'ta':'tr';
+  var gradeText=parseFloat(overall)<=10?'✓ 優良（≤10%）':parseFloat(overall)<=20?'尚可（10%~20%）':'需改善（>20%）';
+
+  if(el) el.innerHTML=
+    '<div style="background:var(--acc-dim);border:1px solid var(--acc);border-radius:8px;padding:14px 16px">'
+    +'<div style="font-size:12px;color:var(--muted);margin-bottom:4px">整體不確定度（算術平方根法）</div>'
+    +'<div style="display:flex;align-items:center;gap:10px">'
+    +'<span style="font-size:28px;font-weight:600;color:var(--acc-t)">± '+overall+'%</span>'
+    +'<span class="tag '+grade+'">'+gradeText+'</span>'
+    +'</div>'
+    +'<div style="font-size:11px;color:var(--hint);margin-top:6px">此結果需填入 C-4 不確定性分析報告，作為盤查查驗文件之一。</div>'
+    +'</div>';
+}
+
 function cExcl(){
   const total=['EX-c','EX-s','EX-r'].reduce((a,id)=>a+(parseFloat(document.getElementById(id).value)||0),0),lc=parseFloat(document.getElementById('LC-total').textContent)||0;
   const el=document.getElementById('EX-res');
