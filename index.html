@@ -1811,7 +1811,19 @@ async function syncToSheets(cat, rec){
 }
 
 
-// 全量同步所有 localStorage 資料到 Sheets
+// 清空指定工作表（保留第一行標題）
+async function sheetsClearData(sheetName){
+  try{
+    // 取得工作表目前資料範圍
+    var range = encodeURIComponent(sheetName+'!A2:Z10000');
+    await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+range+':clear',
+      {method:'POST', headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'}}
+    );
+  }catch(e){console.warn('sheetsClearData error:',e);}
+}
+
+// 全量同步所有 localStorage 資料到 Sheets（先清空再寫入）
 async function syncAllToSheets(){
   if(!gdriveToken){
     alert('請先連結 Google Drive');
@@ -1823,10 +1835,20 @@ async function syncAllToSheets(){
   try{
     var total = matData.length+engData.length+wstData.length+trpData.length+perData.length;
     if(total===0){
-      alert('目前沒有任何記錄需要同步');
-      if(btn){btn.disabled=false;btn.textContent='☁ 全量同步到 Sheets';}
+      if(status){status.textContent='⚪ 目前沒有記錄需要同步';status.style.color='var(--hint)';}
+      if(btn){btn.disabled=false;btn.textContent='🔄 一鍵同步';}
       return;
     }
+    if(!confirm('同步前會先清空 Sheets 所有舊資料，再重新寫入 '+total+' 筆，確定繼續？')) {
+      if(btn){btn.disabled=false;btn.textContent='🔄 一鍵同步';}
+      return;
+    }
+    // 先清空各工作表（保留標題列）
+    if(status) status.textContent='⏳ 清空舊資料中...';
+    for(var cat of Object.keys(SHEET_NAMES)){
+      await sheetsClearData(SHEET_NAMES[cat]);
+    }
+    // 重新寫入所有資料
     var done = 0;
     for(var r of matData){await syncToSheets('mat',r);done++;if(status)status.textContent='⏳ 同步中 '+done+'/'+total+'...';}
     for(var r of engData){await syncToSheets('eng',r);done++;if(status)status.textContent='⏳ 同步中 '+done+'/'+total+'...';}
@@ -1835,12 +1857,11 @@ async function syncAllToSheets(){
     for(var r of perData){await syncToSheets('per',r);done++;if(status)status.textContent='⏳ 同步中 '+done+'/'+total+'...';}
     await syncSummaryToSheets();
     if(status){status.textContent='✅ 全量同步完成！共 '+total+' 筆（'+new Date().toLocaleTimeString('zh-TW')+'）';status.style.color='var(--grn-t)';}
-    alert('✅ 全量同步完成！共同步 '+total+' 筆記錄到 Google Sheets');
   }catch(e){
     alert('同步失敗：'+e.message);
     if(status){status.textContent='❌ 同步失敗：'+e.message;status.style.color='var(--red-t)';}
   }finally{
-    if(btn){btn.disabled=false;btn.textContent='☁ 全量同步到 Sheets';}
+    if(btn){btn.disabled=false;btn.textContent='🔄 一鍵同步';}
   }
 }
 
