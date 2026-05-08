@@ -332,7 +332,7 @@ tbody tr:hover td{background:var(--acc-dim)}
       <div class="fg"><label>進場日期</label><input type="date" id="mat-dr"></div>
       <div class="cbox"><div class="cbox-n" id="MR">—</div><div class="cbox-l">kgCO₂e 本筆排放量</div></div>
       <div class="ev-embed">
-        <div class="ev-embed-hd"><span class="ev-embed-ttl">📎 隨附佐證（過磅單、送貨單、EPD）</span><div class="ev-btns"><button class="ev-ai-btn" onclick="triggerAI('mat')">🤖 AI辨識上傳</button><button class="ev-add-btn" onclick="gdrivePick('mat')" id="gdrive-pick-mat" style="border-color:var(--grn);color:var(--grn-t)">☁ Drive 上傳</button><input type="file" id="mat-ai-inp" style="display:none" accept="image/*" onchange="runAI('mat',this)"></div></div>
+        <div class="ev-embed-hd"><span class="ev-embed-ttl">📎 隨附佐證（過磅單、送貨單、EPD）</span><div class="ev-btns"><button class="ev-ai-btn" onclick="triggerAI('mat')">🤖 AI辨識上傳</button><button class="ev-add-btn" onclick="gdrivePick('mat')" id="gdrive-pick-mat" style="border-color:var(--grn);color:var(--grn-t)">☁ Drive 上傳</button><input type="file" id="mat-ai-inp" style="display:none" accept="image/*" onchange="runAI('mat',this)"><input type="file" id="mat-ev-inp" style="display:none" multiple onchange="addEmbed('mat',this)"></div></div>
         <div id="mat-ai-result" class="ai-result"></div>
         <div class="ev-files" id="mat-ev-files"><span style="font-size:12px;color:var(--hint)">尚未上傳</span></div>
       </div>
@@ -364,7 +364,7 @@ tbody tr:hover td{background:var(--acc-dim)}
       </div>
       <div class="cbox"><div class="cbox-n" id="ER">—</div><div class="cbox-l">kgCO₂e 本筆排放量</div></div>
       <div class="ev-embed">
-        <div class="ev-embed-hd"><span class="ev-embed-ttl">📎 隨附佐證（帳單、收據、電表照片）</span><div class="ev-btns"><button class="ev-ai-btn" onclick="triggerAI('eng')">🤖 AI辨識上傳</button><button class="ev-add-btn" onclick="gdrivePick('eng')" id="gdrive-pick-eng" style="border-color:var(--grn);color:var(--grn-t)">☁ Drive 上傳</button><input type="file" id="eng-ai-inp" style="display:none" accept="image/*" onchange="runAI('eng',this)"></div></div>
+        <div class="ev-embed-hd"><span class="ev-embed-ttl">📎 隨附佐證（帳單、收據、電表照片）</span><div class="ev-btns"><button class="ev-ai-btn" onclick="triggerAI('eng')">🤖 AI辨識上傳</button><button class="ev-add-btn" onclick="gdrivePick('eng')" id="gdrive-pick-eng" style="border-color:var(--grn);color:var(--grn-t)">☁ Drive 上傳</button><input type="file" id="eng-ai-inp" style="display:none" accept="image/*" onchange="runAI('eng',this)"><input type="file" id="eng-ev-inp" style="display:none" multiple onchange="addEmbed('eng',this)"></div></div>
         <div id="eng-ai-result" class="ai-result"></div>
         <div class="ev-files" id="eng-ev-files"><span style="font-size:12px;color:var(--hint)">尚未上傳</span></div>
       </div>
@@ -396,7 +396,7 @@ tbody tr:hover td{background:var(--acc-dim)}
       </div>
       <div class="cbox"><div class="cbox-n" id="WR">—</div><div class="cbox-l">kgCO₂e 本筆排放量</div></div>
       <div class="ev-embed">
-        <div class="ev-embed-hd"><span class="ev-embed-ttl">📎 隨附佐證（清運聯單、過磅單）</span><div class="ev-btns"><button class="ev-ai-btn" onclick="triggerAI('wst')">🤖 AI辨識上傳</button><button class="ev-add-btn" onclick="gdrivePick('wst')" id="gdrive-pick-wst" style="border-color:var(--grn);color:var(--grn-t)">☁ Drive 上傳</button><input type="file" id="wst-ai-inp" style="display:none" accept="image/*" onchange="runAI('wst',this)"></div></div>
+        <div class="ev-embed-hd"><span class="ev-embed-ttl">📎 隨附佐證（清運聯單、過磅單）</span><div class="ev-btns"><button class="ev-ai-btn" onclick="triggerAI('wst')">🤖 AI辨識上傳</button><button class="ev-add-btn" onclick="gdrivePick('wst')" id="gdrive-pick-wst" style="border-color:var(--grn);color:var(--grn-t)">☁ Drive 上傳</button><input type="file" id="wst-ai-inp" style="display:none" accept="image/*" onchange="runAI('wst',this)"><input type="file" id="wst-ev-inp" style="display:none" multiple onchange="addEmbed('wst',this)"></div></div>
         <div id="wst-ai-result" class="ai-result"></div>
         <div class="ev-files" id="wst-ev-files"><span style="font-size:12px;color:var(--hint)">尚未上傳</span></div>
       </div>
@@ -442,7 +442,7 @@ tbody tr:hover td{background:var(--acc-dim)}
       </div>
       <div class="cbox"><div class="cbox-n" id="TR">—</div><div class="cbox-l">kgCO₂e 本筆排放量</div></div>
       <div class="ev-embed">
-        <div class="ev-embed-hd"><span class="ev-embed-ttl">📎 隨附佐證（行車紀錄、Maps截圖）</span><div class="ev-btns"><button class="ev-ai-btn" onclick="triggerAI('trp')">🤖 AI辨識上傳</button><button class="ev-add-btn" onclick="gdrivePick('trp')" id="gdrive-pick-trp" style="border-color:var(--grn);color:var(--grn-t)">☁ Drive 上傳</button><input type="file" id="trp-ai-inp" style="display:none" accept="image/*" onchange="runAI('trp',this)"></div></div>
+        <div class="ev-embed-hd"><span class="ev-embed-ttl">📎 隨附佐證（行車紀錄、Maps截圖）</span><div class="ev-btns"><button class="ev-ai-btn" onclick="triggerAI('trp')">🤖 AI辨識上傳</button><button class="ev-add-btn" onclick="gdrivePick('trp')" id="gdrive-pick-trp" style="border-color:var(--grn);color:var(--grn-t)">☁ Drive 上傳</button><input type="file" id="trp-ai-inp" style="display:none" accept="image/*" onchange="runAI('trp',this)"><input type="file" id="trp-ev-inp" style="display:none" multiple onchange="addEmbed('trp',this)"></div></div>
         <div id="trp-ai-result" class="ai-result"></div>
         <div class="ev-files" id="trp-ev-files"><span style="font-size:12px;color:var(--hint)">尚未上傳</span></div>
       </div>
@@ -475,7 +475,7 @@ tbody tr:hover td{background:var(--acc-dim)}
       </div>
       <div class="cbox"><div class="cbox-n" id="PR">—</div><div class="cbox-l">kgCO₂e 現場碳排</div></div>
       <div class="ev-embed">
-        <div class="ev-embed-hd"><span class="ev-embed-ttl">📎 隨附佐證（出勤表、考勤記錄）</span><div class="ev-btns"><button class="ev-ai-btn" onclick="triggerAI('per')">🤖 AI辨識上傳</button><button class="ev-add-btn" onclick="gdrivePick('per')" id="gdrive-pick-per" style="border-color:var(--grn);color:var(--grn-t)">☁ Drive 上傳</button><input type="file" id="per-ai-inp" style="display:none" accept="image/*" onchange="runAI('per',this)"></div></div>
+        <div class="ev-embed-hd"><span class="ev-embed-ttl">📎 隨附佐證（出勤表、考勤記錄）</span><div class="ev-btns"><button class="ev-ai-btn" onclick="triggerAI('per')">🤖 AI辨識上傳</button><button class="ev-add-btn" onclick="gdrivePick('per')" id="gdrive-pick-per" style="border-color:var(--grn);color:var(--grn-t)">☁ Drive 上傳</button><input type="file" id="per-ai-inp" style="display:none" accept="image/*" onchange="runAI('per',this)"><input type="file" id="per-ev-inp" style="display:none" multiple onchange="addEmbed('per',this)"></div></div>
         <div id="per-ai-result" class="ai-result"></div>
         <div class="ev-files" id="per-ev-files"><span style="font-size:12px;color:var(--hint)">尚未上傳</span></div>
       </div>
@@ -2095,9 +2095,26 @@ function gdrivePick(cat){
     var uploaded = 0;
     for(var f of files){
       if(status) status.textContent = '☁ 上傳中 '+f.name+' ...';
+      // 先讀取 dataURL 備份
+      var dataURL = await new Promise(function(res){
+        var reader = new FileReader();
+        reader.onload = function(e){res(e.target.result);};
+        reader.readAsDataURL(f);
+      });
       var fileObj = await gdriveUpload(f, cat);
       if(fileObj){
+        // 保留 dataURL 作為備份（一鍵同步時用）
+        fileObj.dataURL = dataURL;
         pendingFiles[cat].push(fileObj);
+        uploaded++;
+      } else {
+        // Drive 上傳失敗，改存本機
+        pendingFiles[cat].push({
+          name:f.name,size:(f.size/1024).toFixed(1),
+          ext:f.name.split('.').pop().toUpperCase(),
+          mime:f.type,isImage:f.type.startsWith('image/'),
+          isDrive:false,dataURL:dataURL
+        });
         uploaded++;
       }
     }
