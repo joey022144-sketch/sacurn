@@ -788,8 +788,10 @@ function addMat(){
   const id=document.getElementById('I-mc').value,qty=parseFloat(document.getElementById('I-mq').value),coeff=parseFloat(document.getElementById('I-mco').value);
   if(!id||!qty||!coeff){alert('請填寫完整資料');return;}
   const m=matDB.find(x=>x.id===id);
-  matData.push({name:m?m.name:id,qty,unit:document.getElementById('I-mu').value||'kg',coeff,sup:document.getElementById('I-ms').value||'—',grade:document.getElementById('I-mg').value,date:getDate('mat-dr'),emission:qty*coeff,files:[...pendingFiles.mat]});
+  var matRec={name:m?m.name:id,qty,unit:document.getElementById('I-mu').value||'kg',coeff,sup:document.getElementById('I-ms').value||'—',grade:document.getElementById('I-mg').value,date:getDate('mat-dr'),emission:qty*coeff,files:[...pendingFiles.mat]};
+  matData.push(matRec);
   pendingFiles.mat=[];renderChips('mat');renderMT();updateDash();
+  syncToSheets('mat',matRec);syncSummaryToSheets();
   document.getElementById('mat-ai-result').style.display='none';
 }
 function renderMT(){
@@ -805,8 +807,10 @@ function addEng(){
   const id=document.getElementById('I-et').value,qty=parseFloat(document.getElementById('I-eq').value),coeff=parseFloat(document.getElementById('I-eco').value);
   if(!id||!qty||!coeff){alert('請填寫完整資料');return;}
   const e=getEngCoeff(id);
-  engData.push({name:e?e.name:id,unit:e?e.unit:'單位',qty,coeff,grade:document.getElementById('I-eg').value,date:getDate('eng-dr'),emission:qty*coeff,files:[...pendingFiles.eng]});
+  var engRec={name:e?e.name:id,unit:e?e.unit:'單位',qty,coeff,grade:document.getElementById('I-eg').value,date:getDate('eng-dr'),emission:qty*coeff,files:[...pendingFiles.eng]};
+  engData.push(engRec);
   pendingFiles.eng=[];renderChips('eng');renderET();updateDash();
+  syncToSheets('eng',engRec);syncSummaryToSheets();
   document.getElementById('eng-ai-result').style.display='none';
 }
 function renderET(){
@@ -879,8 +883,10 @@ function addPer(){
   const catEl=document.getElementById('P-cat'),n=parseFloat(document.getElementById('P-count').value),h=parseFloat(document.getElementById('P-hrs').value)||8;
   if(!n){alert('請填寫人數');return;}
   const site=n*h*0.082;
-  perData.push({cat:catEl.options[catEl.selectedIndex].text,n,h,site,emission:site,grade:document.getElementById('P-grade').value,date:getDate('per-dr'),files:[...pendingFiles.per]});
+  var perRec={cat:catEl.options[catEl.selectedIndex].text,n,h,site,emission:site,grade:document.getElementById('P-grade').value,date:getDate('per-dr'),files:[...pendingFiles.per]};
+  perData.push(perRec);
   pendingFiles.per=[];renderChips('per');renderPT();updateDash();
+  syncToSheets('per',perRec);syncSummaryToSheets();
   document.getElementById('per-ai-result').style.display='none';
 }
 function renderPT(){
@@ -1533,8 +1539,9 @@ function exportPDF(){
 // Google Drive 整合
 // ════════════════════════════════════════════════════
 var GDRIVE_CLIENT_ID = '514290132752-q33u0n35k8792crujp8bgd99g3snqvjk.apps.googleusercontent.com';
-var GDRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file';
+var GDRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets';
 var GDRIVE_FOLDER_NAME = 'Sacurn 佐證資料';
+var SHEET_ID = '1X5P96G36G8DHiwxmD2t9rYdffVBNMvfKnQC7-LtzVm8';
 var gdriveToken = null;
 var gdriveFolderId = null;
 var gdriveConnected = false;
@@ -1591,6 +1598,180 @@ function gdriveSetStatus(msg, connected){
   });
 }
 
+// ════════════════════════════════════════════════════
+// Google Sheets 自動同步
+// ════════════════════════════════════════════════════
+
+// Sheet 名稱對應
+var SHEET_NAMES = {
+  mat: '工程材料',
+  eng: '能源消耗',
+  wst: '廢棄物',
+  trp: '運輸車輛',
+  per: '人員現場'
+};
+
+// Sheet 欄位標題
+var SHEET_HEADERS = {
+  mat: ['記錄ID','材料名稱','數量','單位','係數(kgCO₂e/單位)','排放量(kgCO₂e)','供應商','日期','數據等級','佐證檔案','建立時間'],
+  eng: ['記錄ID','能源類型','消耗量','單位','係數','排放量(kgCO₂e)','日期','數據等級','建立時間'],
+  wst: ['記錄ID','廢棄物類型','量(ton)','處理方式','排放量(kgCO₂e)','供應商','日期','數據等級','建立時間'],
+  trp: ['記錄ID','用途','車牌','車型','出發地','目的地','距離(km)','排放量(kgCO₂e)','日期','數據等級','建立時間'],
+  per: ['記錄ID','人員類別','人數','工時(hr)','現場碳排(kgCO₂e)','日期','數據等級','建立時間']
+};
+
+// 初始化 Sheet（建立工作表 + 標題列）
+async function sheetsInit(){
+  if(!gdriveToken) return;
+  try{
+    // 取得現有工作表清單
+    var resp = await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'?fields=sheets.properties.title',
+      {headers:{Authorization:'Bearer '+gdriveToken}}
+    );
+    var data = await resp.json();
+    if(!data.sheets){
+      console.warn('Sheets API error:', data);
+      return;
+    }
+    var existingSheets = data.sheets.map(function(s){return s.properties.title;});
+
+    // 對每個類別確保工作表存在
+    for(var cat of Object.keys(SHEET_NAMES)){
+      var sheetName = SHEET_NAMES[cat];
+      if(!existingSheets.includes(sheetName)){
+        // 新增工作表
+        await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+':batchUpdate', {
+          method:'POST',
+          headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+          body: JSON.stringify({requests:[{addSheet:{properties:{title:sheetName}}}]})
+        });
+        // 寫入標題列
+        await sheetsWriteRow(sheetName, SHEET_HEADERS[cat], 1);
+      }
+    }
+    // 確保「盤查摘要」工作表存在
+    if(!existingSheets.includes('盤查摘要')){
+      await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+':batchUpdate', {
+        method:'POST',
+        headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+        body: JSON.stringify({requests:[{addSheet:{properties:{title:'盤查摘要'}}}]})
+      });
+    }
+    console.log('Sheets initialized');
+  }catch(e){
+    console.warn('sheetsInit error:', e);
+  }
+}
+
+// 寫入一行到指定工作表
+async function sheetsWriteRow(sheetName, values, rowNum){
+  var range = encodeURIComponent(sheetName+'!A'+rowNum);
+  await fetch(
+    'https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+range+'?valueInputOption=USER_ENTERED',
+    {
+      method:'PUT',
+      headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+      body: JSON.stringify({values:[values]})
+    }
+  );
+}
+
+// 附加一行到工作表末尾
+async function sheetsAppendRow(sheetName, values){
+  if(!gdriveToken){return;}
+  try{
+    var range = encodeURIComponent(sheetName+'!A1');
+    await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+range+':append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS',
+      {
+        method:'POST',
+        headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+        body: JSON.stringify({values:[values]})
+      }
+    );
+  }catch(e){
+    console.warn('sheetsAppendRow error:', e);
+  }
+}
+
+// 產生唯一記錄 ID
+function makeRecId(){
+  return new Date().toISOString().replace(/[-:.TZ]/g,'').slice(0,15)+Math.random().toString(36).slice(2,6).toUpperCase();
+}
+
+// 格式化佐證檔案清單
+function formatFiles(files){
+  if(!files||!files.length) return '無';
+  return files.map(function(f){
+    if(f.isDrive && f.driveViewLink) return f.name+'（Drive）';
+    return f.name+'（本機）';
+  }).join('、');
+}
+
+// 同步單筆記錄到 Sheets
+async function syncToSheets(cat, rec){
+  if(!gdriveToken) return;
+  var GN={1:'一級',2:'二級',3:'三級'};
+  var now = new Date().toLocaleString('zh-TW');
+  var id = makeRecId();
+  var row = [];
+  if(cat==='mat'){
+    row=[id,rec.name,rec.qty,rec.unit,rec.coeff,rec.emission.toFixed(2),rec.sup||'',rec.date,GN[rec.grade]||'',formatFiles(rec.files),now];
+  }else if(cat==='eng'){
+    row=[id,rec.name,rec.qty,rec.unit,rec.coeff,rec.emission.toFixed(2),rec.date,GN[rec.grade]||'',now];
+  }else if(cat==='wst'){
+    row=[id,rec.type,rec.qty,rec.method,rec.emission.toFixed(2),rec.supp||'',rec.date,GN[rec.grade]||'',now];
+  }else if(cat==='trp'){
+    row=[id,rec.typeName,rec.plate,rec.vtypeName,rec.from,rec.to,rec.dist,rec.emission.toFixed(2),rec.date,GN[rec.grade]||'',now];
+  }else if(cat==='per'){
+    row=[id,rec.cat,rec.n,rec.h,rec.site.toFixed(2),rec.date,GN[rec.grade]||'',now];
+  }
+  await sheetsAppendRow(SHEET_NAMES[cat], row);
+}
+
+// 同步摘要到 Sheets
+async function syncSummaryToSheets(){
+  if(!gdriveToken) return;
+  try{
+    var matT=(matData.reduce(function(s,r){return s+r.emission;},0)/1000).toFixed(3);
+    var engT=(engData.reduce(function(s,r){return s+r.emission;},0)/1000).toFixed(3);
+    var wstT=(wstData.reduce(function(s,r){return s+r.emission;},0)/1000).toFixed(3);
+    var trpT=(trpData.reduce(function(s,r){return s+r.emission;},0)/1000).toFixed(3);
+    var perT=(perData.reduce(function(s,r){return s+r.emission;},0)/1000).toFixed(3);
+    var conT=(parseFloat(matT)+parseFloat(engT)+parseFloat(wstT)+parseFloat(trpT)+parseFloat(perT)).toFixed(3);
+    var p3=parseFloat(document.getElementById('LC-p3').value)||0;
+    var p4=parseFloat(document.getElementById('LC-p4').value)||0;
+    var p5=parseFloat(document.getElementById('LC-p5').value)||0;
+    var lcT=(parseFloat(conT)+p3+p4+p5).toFixed(3);
+    var area=parseFloat(document.getElementById('LC-area').value)||0;
+    var fu=(parseFloat(lcT)>0&&area>0)?(parseFloat(lcT)*1000/area/60).toFixed(3):'';
+    var now=new Date().toLocaleString('zh-TW');
+    var rows=[
+      ['最後更新',now],
+      [''],
+      ['項目','tCO₂e'],
+      ['工程材料',matT],['能源消耗',engT],['廢棄物',wstT],['運輸車輛',trpT],['人員現場',perT],
+      ['施工合計',conT],
+      ['建築使用60年（階段3）',p3],['修繕更新（階段4）',p4],['拆除廢棄（階段5）',p5],
+      ['全生命週期',lcT],
+      [''],
+      ['功能單位（kgCO₂e/m²/年）',fu],
+      ['室內樓地板面積（m²）',area||''],
+    ];
+    var range = encodeURIComponent('盤查摘要!A1');
+    await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+range+'?valueInputOption=USER_ENTERED',
+      {
+        method:'PUT',
+        headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+        body: JSON.stringify({values:rows})
+      }
+    );
+  }catch(e){console.warn('syncSummary error:',e);}
+}
+
+
 // 確保 Sacurn 佐證資料夾存在
 async function gdriveEnsureFolder(){
   try{
@@ -1620,6 +1801,7 @@ async function gdriveEnsureFolder(){
     }
     localStorage.setItem('sacurn_gdrive_folder', gdriveFolderId);
     gdriveSetStatus('已連結（資料夾：'+GDRIVE_FOLDER_NAME+'）', true);
+    sheetsInit();  // 初始化 Sheets 工作表
   } catch(e){
     gdriveSetStatus('資料夾建立失敗：'+e.message, false);
   }
