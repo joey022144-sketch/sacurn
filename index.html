@@ -1,0 +1,2282 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="github-pages-url" content="https://joey022144-sketch.github.io/sacurn">
+<title>Sacurn 永續一號 — 建築物碳足跡盤查系統 V3.0</title>
+<meta name="version" content="20260508030402">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0f1117;--surf:#181c25;--card:#1e2330;--bdr:#2a3040;--bdr2:#3a4255;
+  --txt:#e8eaf0;--muted:#9ba1b4;--hint:#616878;
+  --acc:#378ADD;--acc-dim:#1a3a5c;--acc-t:#85B7EB;
+  --grn:#1D9E75;--grn-dim:#0a2b20;--grn-t:#5DCAA5;
+  --amb:#BA7517;--amb-dim:#2a1c05;--amb-t:#EF9F27;
+  --red:#A32D2D;--red-dim:#2a0f0f;--red-t:#F09595;
+  --pur:#534AB7;--pur-dim:#1a1840;--pur-t:#AFA9EC;
+}
+body{background:var(--bg);font-family:var(--font-sans);color:var(--txt);font-size:14px}
+.app{display:flex;min-height:760px}
+/* Sidebar */
+.sb{width:210px;flex-shrink:0;background:var(--surf);border-right:1px solid var(--bdr);display:flex;flex-direction:column}
+.sb-logo{padding:16px 14px;border-bottom:1px solid var(--bdr);display:flex;align-items:center;gap:10px}
+.logo-mk{width:32px;height:32px;background:var(--acc);border-radius:7px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.logo-mk svg{width:16px;height:16px}
+.logo-nm{font-size:13px;font-weight:500;color:var(--txt);line-height:1.35}
+.logo-sb{font-size:11px;color:var(--hint);margin-top:2px}
+.sb-sec{padding:14px 13px 5px;font-size:11px;font-weight:500;color:var(--hint);letter-spacing:.06em;text-transform:uppercase}
+.ni{display:flex;align-items:center;gap:9px;padding:9px 11px;margin:2px 7px;border-radius:7px;cursor:pointer;font-size:13px;color:var(--muted);border:none;background:none;width:calc(100% - 14px);text-align:left;transition:all .1s}
+.ni:hover{background:var(--card);color:var(--txt)}.ni.on{background:var(--acc-dim);color:var(--acc-t);font-weight:500}
+.ni svg{width:16px;height:16px;flex-shrink:0;stroke:currentColor;fill:none;stroke-width:1.5}
+.sb-foot{margin-top:auto;padding:13px;border-top:1px solid var(--bdr);font-size:11px;color:var(--hint);text-align:center;line-height:1.8}
+/* Main */
+.main{flex:1;min-width:0;display:flex;flex-direction:column}
+.topbar{background:var(--surf);border-bottom:1px solid var(--bdr);padding:0 18px;height:50px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.tb-ttl{font-size:14px;font-weight:500;color:var(--txt)}
+.tb-pills{display:flex;gap:6px}
+.pill{font-size:11px;font-weight:500;padding:3px 9px;border-radius:20px;border:1px solid}
+.pill-b{background:var(--acc-dim);color:var(--acc-t);border-color:var(--acc)}
+.pill-g{background:var(--grn-dim);color:var(--grn-t);border-color:var(--grn)}
+.content{flex:1;padding:16px;overflow-y:auto}
+.pg{display:none}.pg.on{display:block}
+/* Layout */
+.mg{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}
+.mc{background:var(--card);border:1px solid var(--bdr);border-radius:9px;padding:13px 14px;position:relative;overflow:hidden}
+.mc-top{height:3px;position:absolute;top:0;left:0;right:0}
+.mc-lbl{font-size:12px;color:var(--muted);margin:10px 0 4px}
+.mc-val{font-size:21px;font-weight:500;color:var(--txt)}
+.mc-unit{font-size:11px;color:var(--hint);margin-top:2px}
+.card{background:var(--card);border:1px solid var(--bdr);border-radius:10px;padding:15px 16px;margin-bottom:13px}
+.card-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;flex-wrap:wrap;gap:6px}
+.card-ttl{font-size:14px;font-weight:500;color:var(--txt)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.g3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:11px}
+.g4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:11px}
+.fg{margin-bottom:10px}
+.fg label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:.04em}
+.fg input,.fg select,.fg textarea{width:100%;padding:8px 10px;font-size:13px;border:1px solid var(--bdr2);border-radius:6px;background:#141820;color:var(--txt);font-family:var(--font-sans);outline:none}
+.fg input:focus,.fg select:focus{border-color:var(--acc)}
+.fg select option{background:#1e2330}
+/* Buttons */
+.btn{padding:7px 13px;font-size:13px;border:1px solid var(--bdr2);border-radius:6px;background:transparent;color:var(--txt);cursor:pointer;transition:all .1s;font-family:var(--font-sans)}
+.btn:hover{background:var(--bdr)}
+.btn-p{background:var(--acc);color:#fff;border-color:var(--acc)}.btn-p:hover{background:#185FA5}
+.btn-sm{padding:5px 9px;font-size:12px}
+.btn-d{color:var(--red-t);border-color:var(--red)}.btn-d:hover{background:var(--red-dim)}
+.btn-grn{background:var(--grn-dim);color:var(--grn-t);border-color:var(--grn)}.btn-grn:hover{background:#0d3d29}
+/* Tables */
+.tbl-wrap{overflow-x:auto;border-radius:8px;border:1px solid var(--bdr2)}
+table{width:100%;border-collapse:collapse;table-layout:fixed}
+thead{background:#141820}
+th{font-size:12px;font-weight:500;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;padding:9px 11px;border-bottom:1px solid var(--bdr2);text-align:left;white-space:nowrap}
+td{font-size:13px;padding:9px 11px;border-bottom:1px solid var(--bdr);color:var(--txt);vertical-align:middle;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+tr:last-child td{border-bottom:none}
+tbody tr:nth-child(even){background:#161a22}
+tbody tr:hover td{background:var(--acc-dim)}
+/* Tags */
+.tag{display:inline-block;font-size:11px;padding:3px 8px;border-radius:20px;font-weight:500;border:1px solid}
+.tb{background:var(--acc-dim);color:var(--acc-t);border-color:var(--acc)}
+.tg{background:var(--grn-dim);color:var(--grn-t);border-color:var(--grn)}
+.ta{background:var(--amb-dim);color:var(--amb-t);border-color:var(--amb)}
+.tr{background:var(--red-dim);color:var(--red-t);border-color:var(--red)}
+/* Cbox */
+.cbox{background:var(--acc-dim);border:1px solid var(--acc);border-radius:8px;padding:12px 15px;text-align:center;margin-bottom:10px}
+.cbox-n{font-size:23px;font-weight:500;color:var(--acc-t)}
+.cbox-l{font-size:12px;color:var(--muted);margin-top:3px}
+/* Alert */
+.alert{padding:9px 12px;font-size:12px;margin-bottom:10px;border-left:2px solid;line-height:1.5}
+.al-b{background:var(--acc-dim);color:var(--acc-t);border-color:var(--acc)}
+.al-a{background:var(--amb-dim);color:var(--amb-t);border-color:var(--amb)}
+.al-g{background:var(--grn-dim);color:var(--grn-t);border-color:var(--grn)}
+.al-r{background:var(--red-dim);color:var(--red-t);border-color:var(--red)}
+.al-pur{background:var(--pur-dim);color:var(--pur-t);border-color:var(--pur)}
+/* Misc */
+.formula{background:#141820;border:1px solid var(--bdr);border-radius:6px;padding:8px 12px;font-size:12px;color:var(--muted);font-family:var(--font-mono);margin-bottom:10px}
+.ph-row{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--bdr)}
+.ph-row:last-child{border-bottom:none}
+.ph-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.ph-name{font-size:13px;flex:1;color:var(--txt)}
+.ph-bar{width:90px;height:4px;background:var(--bdr2);border-radius:2px;overflow:hidden;flex-shrink:0}
+.ph-fill{height:100%;border-radius:2px}
+.ph-val{font-size:13px;font-weight:500;min-width:72px;text-align:right;color:var(--txt)}
+.ph-pct{font-size:12px;color:var(--muted);min-width:36px;text-align:right}
+.tab-row{display:flex;gap:5px;margin-bottom:13px;flex-wrap:wrap}
+.tab-btn{padding:6px 13px;font-size:13px;border:1px solid var(--bdr2);border-radius:6px;background:transparent;color:var(--muted);cursor:pointer;font-family:var(--font-sans)}
+.tab-btn.on{background:var(--acc);color:#fff;border-color:var(--acc)}
+.tab-btn:hover:not(.on){background:var(--bdr);color:var(--txt)}
+.itab{display:none}.itab.on{display:block}
+/* Evidence */
+.ev-embed{background:#141820;border:1px dashed var(--bdr2);border-radius:8px;padding:11px 14px;margin-top:8px}
+.ev-embed-hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;gap:8px;flex-wrap:wrap}
+.ev-embed-ttl{font-size:12px;font-weight:500;color:var(--muted);flex:1}
+.ev-btns{display:flex;gap:6px}
+.ev-ai-btn{font-size:12px;color:var(--pur-t);border:1px solid var(--pur);border-radius:5px;padding:4px 10px;background:var(--pur-dim);cursor:pointer;font-family:var(--font-sans);white-space:nowrap}
+.ev-ai-btn:hover{background:#27204e}
+.ev-add-btn{font-size:12px;color:var(--acc-t);border:1px solid var(--acc);border-radius:5px;padding:4px 10px;background:transparent;cursor:pointer;font-family:var(--font-sans);white-space:nowrap}
+.ev-add-btn:hover{background:var(--acc-dim)}
+.ev-files{display:flex;flex-wrap:wrap;gap:6px;min-height:22px}
+.ev-chip{display:flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--bdr2);border-radius:6px;padding:5px 9px;font-size:12px;color:var(--txt)}
+.ev-chip-ext{width:28px;height:20px;border-radius:3px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700;flex-shrink:0}
+.ev-chip-acts{display:flex;gap:4px;flex-shrink:0}
+.ev-chip-btn{font-size:11px;padding:2px 6px;border:1px solid var(--bdr2);border-radius:4px;background:transparent;cursor:pointer;color:var(--muted);font-family:var(--font-sans)}
+.ev-chip-btn:hover{background:var(--bdr);color:var(--txt)}
+.ev-chip-rm{color:var(--hint);cursor:pointer;font-size:15px;padding:0 3px}.ev-chip-rm:hover{color:var(--red-t)}
+/* AI result */
+.ai-result{background:#1a1840;border:1px solid var(--pur);border-radius:8px;padding:12px 14px;margin-top:8px;display:none}
+.ai-result-ttl{font-size:12px;font-weight:500;color:var(--pur-t);margin-bottom:8px;display:flex;align-items:center;gap:6px}
+.ai-field-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:6px}
+.ai-field{background:#141820;border:1px solid var(--bdr2);border-radius:6px;padding:8px 10px}
+.ai-field-lbl{font-size:10px;color:var(--hint);text-transform:uppercase;letter-spacing:.04em;margin-bottom:3px}
+.ai-field-val{font-size:13px;color:var(--pur-t);font-weight:500}
+.ai-actions{display:flex;gap:8px;margin-top:8px}
+.ai-apply-btn{padding:6px 14px;font-size:12px;border:1px solid var(--grn);border-radius:6px;background:var(--grn-dim);color:var(--grn-t);cursor:pointer;font-family:var(--font-sans)}
+.spin{width:16px;height:16px;border:2px solid var(--pur);border-top-color:transparent;border-radius:50%;animation:sp .6s linear infinite;display:inline-block}
+@keyframes sp{to{transform:rotate(360deg)}}
+/* Grade legend */
+.grade-legend{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:12px;padding:9px 12px;background:#141820;border-radius:7px;border:1px solid var(--bdr)}
+.grade-item{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--muted)}
+/* Progress */
+.prog-lbl{display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:5px}
+.prog-bar{height:5px;background:var(--bdr2);border-radius:3px;overflow:hidden;margin-bottom:13px}
+.prog-fill{height:100%;border-radius:3px;background:var(--acc);transition:width .3s}
+.chk-row{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid var(--bdr);cursor:pointer}
+.chk-row:last-child{border-bottom:none}
+.chk-row:hover{color:var(--acc-t)}
+.chk-box{width:15px;height:15px;border:1px solid var(--bdr2);border-radius:3px;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:#141820}
+.chk-box.on{background:var(--acc);border-color:var(--acc)}
+.chk-mark{color:#fff;font-size:10px;font-weight:500}
+.chk-txt{flex:1;font-size:13px;color:var(--txt)}.chk-txt.done{text-decoration:line-through;color:var(--hint)}
+.chk-star{font-size:12px;color:var(--amb)}
+.sec-hd{font-size:11px;font-weight:500;color:var(--hint);text-transform:uppercase;letter-spacing:.07em;margin-bottom:6px;padding-bottom:5px;border-bottom:1px solid var(--bdr)}
+/* Settings */
+.set-tabs{display:flex;gap:0;margin-bottom:20px;border-bottom:1px solid var(--bdr)}
+.set-tab{padding:10px 18px;font-size:13px;font-weight:500;color:var(--muted);border:none;background:none;cursor:pointer;font-family:var(--font-sans);border-bottom:2px solid transparent;margin-bottom:-1px;transition:all .15s;display:flex;align-items:center;gap:7px}
+.set-tab:hover{color:var(--txt)}.set-tab.on{color:var(--acc-t);border-bottom-color:var(--acc)}
+.set-tab svg{width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:1.5}
+.set-panel{display:none}.set-panel.on{display:block}
+.panel-hd{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:14px;gap:12px}
+.panel-ttl{font-size:15px;font-weight:500;color:var(--txt);margin-bottom:3px}
+.panel-desc{font-size:12px;color:var(--muted);line-height:1.5}
+.stats-strip{display:flex;gap:10px;margin-bottom:14px;flex-wrap:wrap}
+.stat-chip{background:#141820;border:1px solid var(--bdr);border-radius:8px;padding:9px 14px}
+.stat-num{font-size:20px;font-weight:500;color:var(--txt)}
+.stat-lbl{font-size:11px;color:var(--muted);margin-top:2px}
+/* Eng rows */
+.eng-row{display:flex;align-items:center;padding:12px 14px;border-bottom:1px solid var(--bdr);gap:12px}
+.eng-row:last-child{border-bottom:none}
+.eng-row:hover{background:var(--acc-dim)}
+.eng-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:16px}
+.eng-info{flex:1;min-width:0}
+.eng-name{font-size:13px;font-weight:500;color:var(--txt)}
+.eng-src{font-size:11px;color:var(--hint);margin-top:2px}
+.eng-right{display:flex;align-items:center;gap:8px;flex-shrink:0}
+.eng-inp{border:1px solid var(--bdr2);border-radius:6px;background:#141820;font-size:14px;font-weight:500;color:var(--acc-t);font-family:var(--font-mono);padding:6px 10px;width:90px;text-align:right;outline:none}
+.eng-unit{font-size:11px;color:var(--muted);min-width:90px}
+.live-tag{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500;border:1px solid;background:var(--grn-dim);color:var(--grn-t);border-color:var(--grn);white-space:nowrap}
+.manual-tag{font-size:10px;padding:2px 7px;border-radius:20px;font-weight:500;border:1px solid;background:var(--bdr);color:var(--muted);border-color:var(--bdr2);white-space:nowrap}
+/* Inline edit */
+.inline-edit{border:none;background:transparent;font-size:13px;color:var(--txt);font-family:var(--font-sans);width:100%;padding:0}
+.coeff-edit{border:1px solid var(--bdr2);border-radius:5px;background:#141820;font-size:13px;color:var(--txt);font-family:var(--font-mono);padding:5px 8px;width:100%;outline:none}
+/* API setup */
+
+.api-row{display:flex;gap:8px;align-items:flex-end;margin-top:10px}
+.api-row .fg{flex:1;margin-bottom:0}
+.api-status{display:flex;align-items:center;gap:6px;font-size:12px;margin-top:8px}
+.api-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0;background:var(--hint)}
+/* Modal */
+.modal-bd{position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);display:flex;align-items:center;justify-content:center;z-index:400}
+.modal-box{background:var(--card);border:1px solid var(--bdr2);border-radius:11px;padding:22px;max-width:90%;max-height:85vh;overflow:auto}
+.preview-img{max-width:100%;max-height:60vh;border-radius:6px;display:block;margin:0 auto}
+.preview-pdf{width:100%;height:60vh;border:none;border-radius:6px}
+</style>
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+</head>
+<body>
+<div class="app" id="APP">
+<!-- Sidebar -->
+<div class="sb">
+  <div class="sb-logo">
+    <div class="logo-mk"><svg viewBox="0 0 16 16" stroke="#fff"><circle cx="8" cy="8" r="5.5"/><path d="M8 5v3l2 1.2" stroke-linecap="round"/></svg></div>
+    <div><div class="logo-nm">Sacurn 永續一號</div><div class="logo-sb">碳足跡盤查 V3.0</div></div>
+  </div>
+  <div class="sb-sec">主要功能</div>
+  <button class="ni on" onclick="nav('dash',this)"><svg viewBox="0 0 16 16"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>儀表板</button>
+  <button class="ni" onclick="nav('input',this)"><svg viewBox="0 0 16 16"><path d="M2 8h12M8 2v12" stroke-linecap="round"/></svg>資料輸入</button>
+  <button class="ni" onclick="nav('lc',this)"><svg viewBox="0 0 16 16"><path d="M8 2a6 6 0 1 0 6 6" stroke-linecap="round"/><path d="M14 2v4h-4" stroke-linecap="round" stroke-linejoin="round"/></svg>生命週期計算</button>
+  <button class="ni" onclick="nav('ev',this)"><svg viewBox="0 0 16 16"><path d="M3 2h8l2 2v10H3V2z"/><path d="M6 7h4M6 10h4M6 4.5h3" stroke-linecap="round"/></svg>佐證資料總覽</button>
+  <button class="ni" onclick="nav('comp',this)"><svg viewBox="0 0 16 16"><path d="M8 2l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 11l-3.7 2.5 1.4-4.3L2 6.5h4.5z"/></svg>合規檢核</button>
+  <div class="sb-sec">係數設定</div>
+  <button class="ni" onclick="nav('set-eng',this)"><svg viewBox="0 0 16 16"><path d="M8 2v3M8 11v3M3.2 4.7l2.1 2.1M10.7 11.2l2.1 2.1M2 8h3M11 8h3M3.2 11.2l2.1-2.1M10.7 4.7l2.1-2.1" stroke-linecap="round"/><circle cx="8" cy="8" r="2.5"/></svg>能源排放係數</button>
+  <button class="ni" onclick="nav('set-mat',this)"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M5 3v10M11 3v10M2 8h12" stroke-linecap="round"/></svg>材料排放係數</button>
+  <button class="ni" onclick="nav('set-vtype',this)"><svg viewBox="0 0 16 16"><rect x="1" y="6" width="10" height="5" rx="1.5"/><circle cx="4" cy="11" r="1.5"/><circle cx="9" cy="11" r="1.5"/><path d="M11 8.5h3.5l1 3H11V8.5z"/><circle cx="14" cy="11" r="1.5"/></svg>車輛類型管理</button>
+  <div class="sb-foot">ISO 14067 / 14064-1<br>CFP-PCR 建築物 V3.0</div>
+</div>
+
+<div class="main">
+<div class="topbar">
+  <div class="tb-ttl" id="TBT">儀表板</div>
+  <div class="tb-pills">
+    <span class="pill pill-b">H 類住宿 ｜ RC / 鋼骨</span>
+    <span class="pill pill-g">60 年生命週期</span>
+  </div>
+</div>
+<div class="content">
+
+<!-- ═══ DASHBOARD ═══ -->
+<div class="pg on" id="pg-dash">
+  <div class="mg">
+    <div class="mc"><div class="mc-top" style="background:var(--acc)"></div><div class="mc-lbl">功能單位</div><div class="mc-val" id="D-func">—</div><div class="mc-unit">kgCO₂e/m²/年</div></div>
+    <div class="mc"><div class="mc-top" style="background:var(--grn)"></div><div class="mc-lbl">總碳排放</div><div class="mc-val" id="D-total">—</div><div class="mc-unit">tCO₂e</div></div>
+    <div class="mc"><div class="mc-top" style="background:var(--amb)"></div><div class="mc-lbl">佐證檔案</div><div class="mc-val" id="D-files">0</div><div class="mc-unit">份已上傳</div></div>
+    <div class="mc"><div class="mc-top" style="background:var(--pur)"></div><div class="mc-lbl">整體進度</div><div class="mc-val" id="D-prog">0%</div><div class="mc-unit">盤查完成度</div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+    <div class="card" style="grid-column:1/-1">
+      <div class="card-hd"><div class="card-ttl">五大生命週期階段碳排放</div><span class="tag tb">D-1 全生命週期彙總</span></div>
+      <div style="height:140px;position:relative;margin-bottom:12px"><canvas id="phChart" role="img" aria-label="五階段碳排放長條圖"></canvas></div>
+      <div>
+        <div class="ph-row"><div class="ph-dot" style="background:#378ADD"></div><div class="ph-name">階段1：原料取得</div><div class="ph-bar"><div class="ph-fill" id="PB1" style="background:#378ADD;width:0%"></div></div><div class="ph-val" id="PV1">—</div><div class="ph-pct" id="PP1">—</div></div>
+        <div class="ph-row"><div class="ph-dot" style="background:#1D9E75"></div><div class="ph-name">階段2：營造施工</div><div class="ph-bar"><div class="ph-fill" id="PB2" style="background:#1D9E75;width:0%"></div></div><div class="ph-val" id="PV2">—</div><div class="ph-pct" id="PP2">—</div></div>
+        <div class="ph-row"><div class="ph-dot" style="background:#BA7517"></div><div class="ph-name">階段3：建築使用</div><div class="ph-bar"><div class="ph-fill" id="PB3" style="background:#BA7517;width:0%"></div></div><div class="ph-val" id="PV3">—</div><div class="ph-pct" id="PP3">—</div></div>
+        <div class="ph-row"><div class="ph-dot" style="background:#7F77DD"></div><div class="ph-name">階段4：修繕更新</div><div class="ph-bar"><div class="ph-fill" id="PB4" style="background:#7F77DD;width:0%"></div></div><div class="ph-val" id="PV4">—</div><div class="ph-pct" id="PP4">—</div></div>
+        <div class="ph-row"><div class="ph-dot" style="background:#D85A30"></div><div class="ph-name">階段5：拆除廢棄</div><div class="ph-bar"><div class="ph-fill" id="PB5" style="background:#D85A30;width:0%"></div></div><div class="ph-val" id="PV5">—</div><div class="ph-pct" id="PP5">—</div></div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div class="card-ttl">合規狀態</div></div>
+      <div class="ph-row"><span style="font-size:13px;flex:1">10% 門檻規則</span><span class="tag" id="C10">未輸入</span></div>
+      <div class="ph-row"><span style="font-size:13px;flex:1">5% 重大性原則</span><span class="tag" id="C5">未輸入</span></div>
+      <div class="ph-row"><span style="font-size:13px;flex:1">佐證清單進度</span><span class="tag" id="CDOC">進行中</span></div>
+      <div class="ph-row"><span style="font-size:13px;flex:1">DQI 品質</span><span class="tag" id="CDQI">未評估</span></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div class="card-ttl">近期記錄</div></div>
+      <div id="RECENT" style="font-size:13px;color:var(--hint)">尚無記錄</div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:2px">
+    <div class="card-hd">
+      <div class="card-ttl">資料匯出 &amp; 備份</div>
+      <span class="tag tb">供查驗機構使用</span>
+    </div>
+    <div class="alert al-b" style="margin-bottom:10px">匯出完整盤查數據，或用 JSON 備份資料防止遺失。</div>
+    <div style="display:flex;gap:9px;flex-wrap:wrap;align-items:center">
+      <button class="btn btn-p" onclick="exportExcel()" style="display:flex;align-items:center;gap:6px">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="2" width="12" height="12" rx="1"/><path d="M5 5l3 6 3-6M5 11l3-6 3 6" stroke-linecap="round"/></svg>
+        匯出 Excel
+      </button>
+      <button class="btn" onclick="exportPDF()" style="display:flex;align-items:center;gap:6px;background:var(--red);border-color:var(--red);color:#fff">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 2h7l3 3v9H3V2z"/><path d="M10 2v3h3"/><path d="M5 8h6M5 11h4"/></svg>
+        匯出 PDF
+      </button>
+      <button class="btn btn-grn" onclick="exportJSON()" style="display:flex;align-items:center;gap:6px">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3v10M5 10l3 3 3-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        備份 JSON
+      </button>
+      <label class="btn" style="cursor:pointer;display:flex;align-items:center;gap:6px;margin:0">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 13V3M5 6l3-3 3 3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        匯入 JSON<input type="file" accept=".json" style="display:none" onchange="importJSON(this)">
+      </label>
+      <button class="btn" onclick="syncAllToSheets()" id="sync-all-btn" style="display:flex;align-items:center;gap:6px;border-color:var(--acc);color:var(--acc-t)">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 8a6 6 0 1 0 11-3" stroke-linecap="round"/><path d="M14 2v4h-4" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        🔄 一鍵同步
+      </button>
+      <button class="btn btn-sm" onclick="clearAllData()" style="color:var(--red-t);border-color:var(--red);margin-left:auto">🗑 清除資料</button>
+    </div>
+    <div id="storage-status" style="font-size:11px;color:var(--hint);margin-top:8px">💾 資料將自動儲存於瀏覽器</div>
+    <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--bdr);display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+      <div style="font-size:12px;font-weight:500;color:var(--txt)">☁ Google Drive 佐證儲存</div>
+      <button id="gdrive-connect-btn" class="btn btn-sm" onclick="gdriveConnect()" style="border-color:var(--grn);color:var(--grn-t)">🔗 連結 Google Drive</button>
+      <button id="gdrive-disconnect-btn" class="btn btn-sm btn-d" onclick="gdriveDisconnect()" style="display:none">✕ 中斷連結</button>
+      <div id="gdrive-status" style="font-size:12px;color:var(--hint)">未連結 — 佐證存本機</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ INPUT ═══ -->
+<div class="pg" id="pg-input">
+  <div class="alert al-pur">🤖 每個輸入區塊底部有「AI 辨識上傳」——上傳截圖後 AI 自動辨識帶入欄位。「純上傳」不辨識，直接作為佐證存檔。</div>
+  <div class="tab-row">
+    <button class="tab-btn on" onclick="itab('mat',this)">工程材料</button>
+    <button class="tab-btn" onclick="itab('eng',this)">能源消耗</button>
+    <button class="tab-btn" onclick="itab('wst',this)">廢棄物</button>
+    <button class="tab-btn" onclick="itab('trp',this)">運輸車輛</button>
+    <button class="tab-btn" onclick="itab('per',this)">人員</button>
+  </div>
+
+  <!-- 材料 -->
+  <div class="itab on" id="it-mat">
+    <div class="card">
+      <div class="card-hd"><div class="card-ttl">材料進場記錄 — A-2 / B-1</div><span class="tag tb">係數來自設定頁</span></div>
+      <div class="grade-legend">
+        <div class="grade-item"><span class="tag tg">一級</span>現場過磅/EPD</div>
+        <div class="grade-item"><span class="tag tb">二級</span>環境部公告</div>
+        <div class="grade-item"><span class="tag ta">三級</span>國際資料庫</div>
+      </div>
+      <div class="formula">碳排放(kgCO₂e) = 數量 × 排放係數</div>
+      <div class="g3">
+        <div class="fg"><label>材料類別</label><select id="I-mc" onchange="applyMC()"><option value="">— 選擇 —</option></select></div>
+        <div class="fg"><label>數量</label><input type="number" id="I-mq" placeholder="0" oninput="cMat()"></div>
+        <div class="fg"><label>單位（自動）</label><input id="I-mu" readonly style="background:#0f1117;color:var(--muted)"></div>
+      </div>
+      <div class="g3">
+        <div class="fg"><label>係數 (kgCO₂e/單位)</label><input type="number" id="I-mco" step="0.0001" oninput="cMat()"></div>
+        <div class="fg"><label>供應商</label><input type="text" id="I-ms" placeholder="供應商名稱"></div>
+        <div class="fg"><label>數據等級</label><select id="I-mg"><option value="1">一級</option><option value="2">二級</option><option value="3">三級</option></select></div>
+      </div>
+      <div class="fg"><label>進場日期</label><input type="date" id="mat-dr"></div>
+      <div class="cbox"><div class="cbox-n" id="MR">—</div><div class="cbox-l">kgCO₂e 本筆排放量</div></div>
+      <div class="ev-embed">
+        <div class="ev-embed-hd"><span class="ev-embed-ttl">📎 隨附佐證（過磅單、送貨單、EPD）</span><div class="ev-btns"><button class="ev-ai-btn" onclick="triggerAI('mat')">🤖 AI辨識上傳</button><button class="ev-add-btn" onclick="drivePickViaInput('mat')" id="gdrive-pick-mat" style="border-color:var(--grn);color:var(--grn-t)">☁ Drive 上傳</button><input type="file" id="mat-ai-inp" style="display:none" accept="image/*" onchange="runAI('mat',this)"><input type="file" id="mat-ev-inp" style="display:none" multiple onchange="addEmbed('mat',this)"></div></div>
+        <div id="mat-ai-result" class="ai-result"></div>
+        <div class="ev-files" id="mat-ev-files"><span style="font-size:12px;color:var(--hint)">尚未上傳</span></div>
+      </div>
+      <div style="margin-top:10px"><button class="btn btn-p" onclick="addMat()">新增記錄</button></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div class="card-ttl">材料記錄清單</div><span class="tag tg" id="MC">0 筆</span></div>
+      <div class="tbl-wrap"><table>
+        <colgroup><col style="width:13%"><col style="width:9%"><col style="width:7%"><col style="width:9%"><col style="width:10%"><col style="width:11%"><col style="width:7%"><col style="width:9%"><col style="width:25%"></colgroup>
+        <thead><tr><th>材料</th><th>數量</th><th>單位</th><th>係數</th><th>kgCO₂e</th><th>日期</th><th>等級</th><th>附件</th><th>操作</th></tr></thead>
+        <tbody id="MT"><tr><td colspan="9" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- 能源 -->
+  <div class="itab" id="it-eng">
+    <div class="card">
+      <div class="card-hd"><div class="card-ttl">能源消耗記錄 — A-4 / A-9</div><span class="tag tg">係數同步自設定頁</span></div>
+      <div class="formula" id="eng-formula">柴油 — ｜ 汽油 — ｜ 電力 — ｜ 自來水 — kgCO₂e/單位（載入中）</div>
+      <div class="g3">
+        <div class="fg"><label>能源類型</label><select id="I-et" onchange="applyEC()"><option value="">—</option></select></div>
+        <div class="fg"><label>消耗量</label><input type="number" id="I-eq" placeholder="0" oninput="cEng()"></div>
+        <div class="fg"><label>係數（自動帶入）</label><input type="number" id="I-eco" step="0.0001" oninput="cEng()"></div>
+      </div>
+      <div class="g2">
+        <div class="fg"><label>數據等級</label><select id="I-eg"><option value="1">一級</option><option value="2">二級</option><option value="3">三級</option></select></div>
+        <div class="fg"><label>記錄日期</label><input type="date" id="eng-dr"></div>
+      </div>
+      <div class="cbox"><div class="cbox-n" id="ER">—</div><div class="cbox-l">kgCO₂e 本筆排放量</div></div>
+      <div class="ev-embed">
+        <div class="ev-embed-hd"><span class="ev-embed-ttl">📎 隨附佐證（帳單、收據、電表照片）</span><div class="ev-btns"><button class="ev-ai-btn" onclick="triggerAI('eng')">🤖 AI辨識上傳</button><button class="ev-add-btn" onclick="drivePickViaInput('eng')" id="gdrive-pick-eng" style="border-color:var(--grn);color:var(--grn-t)">☁ Drive 上傳</button><input type="file" id="eng-ai-inp" style="display:none" accept="image/*" onchange="runAI('eng',this)"><input type="file" id="eng-ev-inp" style="display:none" multiple onchange="addEmbed('eng',this)"></div></div>
+        <div id="eng-ai-result" class="ai-result"></div>
+        <div class="ev-files" id="eng-ev-files"><span style="font-size:12px;color:var(--hint)">尚未上傳</span></div>
+      </div>
+      <div style="margin-top:10px"><button class="btn btn-p" onclick="addEng()">新增記錄</button></div>
+    </div>
+    <div class="card">
+      <div class="tbl-wrap"><table>
+        <colgroup><col style="width:12%"><col style="width:11%"><col style="width:8%"><col style="width:10%"><col style="width:12%"><col style="width:13%"><col style="width:7%"><col style="width:9%"><col style="width:18%"></colgroup>
+        <thead><tr><th>類型</th><th>消耗量</th><th>單位</th><th>係數</th><th>kgCO₂e</th><th>日期</th><th>等級</th><th>附件</th><th>操作</th></tr></thead>
+        <tbody id="ET"><tr><td colspan="9" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- 廢棄物 -->
+  <div class="itab" id="it-wst">
+    <div class="card">
+      <div class="card-hd"><div class="card-ttl">廢棄物記錄 — A-6 / B-5</div></div>
+      <div class="formula">碳排放 = 廢棄物量(ton) × 處理係數</div>
+      <div class="g3">
+        <div class="fg"><label>廢棄物類型</label><select id="I-wt"><option value="concrete_w">混凝土廢棄物</option><option value="rebar_w">鋼筋廢棄物</option><option value="general">一般廢棄物</option><option value="recyclable">資源回收</option><option value="hazardous">有害廢棄物</option></select></div>
+        <div class="fg"><label>產生量 (ton)</label><input type="number" id="I-wq" placeholder="0" oninput="cWst()"></div>
+        <div class="fg"><label>處理方式</label><select id="I-wm" onchange="cWst()"><option value="0.5">掩埋</option><option value="0.05">回收再利用</option><option value="0.3">焚化</option></select></div>
+      </div>
+      <div class="g3">
+        <div class="fg"><label>清運供應商</label><input type="text" id="I-wsupp" placeholder="清運處理廠商名稱"></div>
+        <div class="fg"><label>數據等級</label><select id="I-wg"><option value="1">一級</option><option value="2">二級</option><option value="3">三級</option></select></div>
+        <div class="fg"><label>清運日期</label><input type="date" id="wst-dr"></div>
+      </div>
+      <div class="cbox"><div class="cbox-n" id="WR">—</div><div class="cbox-l">kgCO₂e 本筆排放量</div></div>
+      <div class="ev-embed">
+        <div class="ev-embed-hd"><span class="ev-embed-ttl">📎 隨附佐證（清運聯單、過磅單）</span><div class="ev-btns"><button class="ev-ai-btn" onclick="triggerAI('wst')">🤖 AI辨識上傳</button><button class="ev-add-btn" onclick="drivePickViaInput('wst')" id="gdrive-pick-wst" style="border-color:var(--grn);color:var(--grn-t)">☁ Drive 上傳</button><input type="file" id="wst-ai-inp" style="display:none" accept="image/*" onchange="runAI('wst',this)"><input type="file" id="wst-ev-inp" style="display:none" multiple onchange="addEmbed('wst',this)"></div></div>
+        <div id="wst-ai-result" class="ai-result"></div>
+        <div class="ev-files" id="wst-ev-files"><span style="font-size:12px;color:var(--hint)">尚未上傳</span></div>
+      </div>
+      <div style="margin-top:10px"><button class="btn btn-p" onclick="addWst()">新增記錄</button></div>
+    </div>
+    <div class="card">
+      <div class="tbl-wrap"><table>
+        <colgroup><col style="width:14%"><col style="width:10%"><col style="width:10%"><col style="width:12%"><col style="width:16%"><col style="width:12%"><col style="width:7%"><col style="width:8%"><col style="width:11%"></colgroup>
+        <thead><tr><th>類型</th><th>量(ton)</th><th>處理</th><th>kgCO₂e</th><th>供應商</th><th>日期</th><th>等級</th><th>附件</th><th>刪</th></tr></thead>
+        <tbody id="WT"><tr><td colspan="9" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- 運輸 -->
+  <div class="itab" id="it-trp">
+    <div class="card">
+      <div class="card-hd"><div class="card-ttl">運輸車輛記錄 — A-3 / A-7 / B-3</div><span class="tag tb">車型來自設定頁</span></div>
+      <div class="formula">貨運：距離×載重×趟次×係數 ｜ 人員：人數×距離×2×趟次×係數</div>
+      <div class="g4">
+        <div class="fg"><label>車輛用途</label><select id="T-type" onchange="onTrpTypeChange()"><option value="mat">材料運輸</option><option value="equip">機具運輸</option><option value="waste">廢棄物清運</option><option value="commute">人員通勤</option><option value="biz">公務出行</option></select></div>
+        <div class="fg"><label>車牌號碼</label><input type="text" id="T-plate" placeholder="ABC-1234"></div>
+        <div class="fg"><label>車輛類型</label><select id="T-vtype" onchange="onVtypeChange()"><option value="">— 選擇 —</option></select></div>
+        <div class="fg"><label>趟次</label><input type="number" id="T-trips" placeholder="1" value="1" oninput="cTrp()"></div>
+      </div>
+      <div style="background:#141820;border:1px solid var(--bdr);border-radius:8px;padding:12px 14px;margin-bottom:10px">
+        <div style="font-size:12px;font-weight:500;color:var(--muted);margin-bottom:8px;text-transform:uppercase;letter-spacing:.04em">行程資訊</div>
+        <div class="g3" style="margin-bottom:8px">
+          <div class="fg" style="margin-bottom:0"><label>出發地</label><input type="text" id="T-from" placeholder="出發地點"></div>
+          <div class="fg" style="margin-bottom:0"><label>目的地</label><input type="text" id="T-to" placeholder="目的地點"></div>
+          <div class="fg" style="margin-bottom:0"><label>距離 (km)</label>
+            <div style="display:flex;gap:6px"><input type="number" id="T-dist" placeholder="填入實際距離" step="0.1" oninput="cTrp()" style="flex:1"><a class="btn btn-sm" style="background:var(--grn-dim);border-color:var(--grn);color:var(--grn-t);text-decoration:none;white-space:nowrap" href="#" onclick="return openMaps()">📍 Maps</a></div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--hint)">點擊「📍 Maps」開啟 Google Maps 查詢建議路線距離後手動填入。</div>
+      </div>
+      <div class="g4">
+        <div class="fg" id="T-load-wrap"><label>載重 (ton)</label><input type="number" id="T-load" placeholder="0" oninput="cTrp()"></div>
+        <div class="fg" id="T-count-wrap" style="display:none"><label>人數（人）</label><input type="number" id="T-pcount" placeholder="1" value="1" oninput="cTrp()"></div>
+        <div class="fg"><label>排放係數</label><input type="number" id="T-coeff" value="0.062" step="0.001" oninput="cTrp()"></div>
+        <div class="fg"><label>數據等級</label><select id="T-grade"><option value="1">一級</option><option value="2">二級</option><option value="3">三級</option></select></div>
+        <div class="fg"><label>運輸日期</label><input type="date" id="trp-dr"></div>
+      </div>
+      <div class="cbox"><div class="cbox-n" id="TR">—</div><div class="cbox-l">kgCO₂e 本筆排放量</div></div>
+      <div class="ev-embed">
+        <div class="ev-embed-hd"><span class="ev-embed-ttl">📎 隨附佐證（行車紀錄、Maps截圖）</span><div class="ev-btns"><button class="ev-ai-btn" onclick="triggerAI('trp')">🤖 AI辨識上傳</button><button class="ev-add-btn" onclick="drivePickViaInput('trp')" id="gdrive-pick-trp" style="border-color:var(--grn);color:var(--grn-t)">☁ Drive 上傳</button><input type="file" id="trp-ai-inp" style="display:none" accept="image/*" onchange="runAI('trp',this)"><input type="file" id="trp-ev-inp" style="display:none" multiple onchange="addEmbed('trp',this)"></div></div>
+        <div id="trp-ai-result" class="ai-result"></div>
+        <div class="ev-files" id="trp-ev-files"><span style="font-size:12px;color:var(--hint)">尚未上傳</span></div>
+      </div>
+      <div style="margin-top:10px"><button class="btn btn-p" onclick="addTrp()">新增記錄</button></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div class="card-ttl">運輸記錄清單</div><span class="tag tg" id="TC">0 筆</span></div>
+      <div class="tbl-wrap"><table>
+        <colgroup><col style="width:10%"><col style="width:8%"><col style="width:9%"><col style="width:12%"><col style="width:11%"><col style="width:7%"><col style="width:9%"><col style="width:11%"><col style="width:7%"><col style="width:5%"><col style="width:11%"></colgroup>
+        <thead><tr><th>用途</th><th>車牌</th><th>車型</th><th>出發地</th><th>目的地</th><th>km</th><th>kgCO₂e</th><th>日期</th><th>等級</th><th>附件</th><th>刪</th></tr></thead>
+        <tbody id="TT"><tr><td colspan="11" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr></tbody>
+      </table></div>
+    </div>
+  </div>
+
+  <!-- 人員 -->
+  <div class="itab" id="it-per">
+    <div class="card">
+      <div class="card-hd"><div class="card-ttl">人員施工記錄 — E-2</div><span class="tag tb">現場碳排</span></div>
+      <div class="alert al-b">人員通勤里程請至「運輸車輛」頁面，選擇「人員通勤」記錄。</div>
+      <div class="formula">現場碳排 = 人數 × 工時(hr) × 0.082 kgCO₂e</div>
+      <div class="g3">
+        <div class="fg"><label>人員類別</label><select id="P-cat"><option>施工工人</option><option>工地工程師</option><option>專案管理</option><option>監工/品管</option><option>分包商人員</option><option>其他</option></select></div>
+        <div class="fg"><label>人數（人）</label><input type="number" id="P-count" placeholder="0" oninput="cPer()"></div>
+        <div class="fg"><label>工時（小時/人）</label><input type="number" id="P-hrs" placeholder="8" oninput="cPer()"></div>
+      </div>
+      <div class="g2">
+        <div class="fg"><label>數據等級</label><select id="P-grade"><option value="1">一級</option><option value="2">二級</option><option value="3">三級</option></select></div>
+        <div class="fg"><label>施工日期</label><input type="date" id="per-dr"></div>
+      </div>
+      <div class="cbox"><div class="cbox-n" id="PR">—</div><div class="cbox-l">kgCO₂e 現場碳排</div></div>
+      <div class="ev-embed">
+        <div class="ev-embed-hd"><span class="ev-embed-ttl">📎 隨附佐證（出勤表、考勤記錄）</span><div class="ev-btns"><button class="ev-ai-btn" onclick="triggerAI('per')">🤖 AI辨識上傳</button><button class="ev-add-btn" onclick="drivePickViaInput('per')" id="gdrive-pick-per" style="border-color:var(--grn);color:var(--grn-t)">☁ Drive 上傳</button><input type="file" id="per-ai-inp" style="display:none" accept="image/*" onchange="runAI('per',this)"><input type="file" id="per-ev-inp" style="display:none" multiple onchange="addEmbed('per',this)"></div></div>
+        <div id="per-ai-result" class="ai-result"></div>
+        <div class="ev-files" id="per-ev-files"><span style="font-size:12px;color:var(--hint)">尚未上傳</span></div>
+      </div>
+      <div style="margin-top:10px"><button class="btn btn-p" onclick="addPer()">新增記錄</button></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div class="card-ttl">人員記錄清單</div><span class="tag tg" id="PC">0 筆</span></div>
+      <div class="tbl-wrap"><table>
+        <colgroup><col style="width:18%"><col style="width:10%"><col style="width:10%"><col style="width:14%"><col style="width:16%"><col style="width:9%"><col style="width:9%"><col style="width:14%"></colgroup>
+        <thead><tr><th>類別</th><th>人數</th><th>工時</th><th>現場碳排</th><th>日期</th><th>等級</th><th>附件</th><th>操作</th></tr></thead>
+        <tbody id="PT"><tr><td colspan="8" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr></tbody>
+      </table></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ LIFECYCLE ═══ -->
+<div class="pg" id="pg-lc">
+  <div class="card">
+    <div class="card-hd"><div class="card-ttl">建築基本資訊 — D-2</div></div>
+    <div class="g2">
+      <div class="fg"><label>室內樓地板面積 (m²)</label><input type="number" id="LC-area" placeholder="例：5000" oninput="cLC()"></div>
+      <div class="fg"><label>生命週期（年）</label><input type="number" id="LC-life" value="60" oninput="cLC()"></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><div class="card-ttl">各階段碳排放 — D-1 全生命週期彙總</div><span class="tag tb">階段1、2 自動帶入</span></div>
+    <div class="alert al-b">確認階段1、2 後，手動輸入階段3–5 估算值。</div>
+    <div class="g2">
+      <div class="fg"><label>階段1：原料取得 (tCO₂e)</label><input type="number" id="LC-p1" placeholder="自動帶入" oninput="cLC()"></div>
+      <div class="fg"><label>階段2：營造施工 (tCO₂e)</label><input type="number" id="LC-p2" placeholder="自動帶入" oninput="cLC()"></div>
+      <div class="fg"><label>階段3：建築使用60年 (tCO₂e)</label><input type="number" id="LC-p3" placeholder="D-3 模擬結果" oninput="cLC()"></div>
+      <div class="fg"><label>階段4：修繕更新 (tCO₂e)</label><input type="number" id="LC-p4" placeholder="D-4 估算" oninput="cLC()"></div>
+      <div class="fg"><label>階段5：拆除廢棄 (tCO₂e)</label><input type="number" id="LC-p5" placeholder="D-5 估算" oninput="cLC()"></div>
+    </div>
+    <div class="g2" style="margin-top:5px">
+      <div class="cbox"><div class="cbox-n" id="LC-total">—</div><div class="cbox-l">全生命週期總排放 tCO₂e</div></div>
+      <div class="cbox"><div class="cbox-n" id="LC-func">—</div><div class="cbox-l">功能單位 kgCO₂e/m²/年</div></div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><div class="card-ttl">D-3 建築使用階段能耗估算（60年）</div></div>
+    <div class="g2">
+      <div class="fg"><label>空調 年耗電 (kWh)</label><input type="number" id="U-ac" placeholder="0" oninput="cUse()"></div>
+      <div class="fg"><label>照明 年耗電 (kWh)</label><input type="number" id="U-lt" placeholder="0" oninput="cUse()"></div>
+      <div class="fg"><label>電梯 年耗電 (kWh)</label><input type="number" id="U-el" placeholder="0" oninput="cUse()"></div>
+      <div class="fg"><label>給排水 年耗電 (kWh)</label><input type="number" id="U-wt" placeholder="0" oninput="cUse()"></div>
+    </div>
+    <div class="fg"><label>電力係數 (kgCO₂e/kWh) — 自動同步設定頁</label><input type="number" id="U-ef" step="0.001" oninput="cUse()" style="width:180px"></div>
+    <div class="cbox"><div class="cbox-n" id="U-res">—</div><div class="cbox-l">tCO₂e（60年估算）→ 可填入階段3</div></div>
+  </div>
+</div>
+
+<!-- ═══ EVIDENCE ═══ -->
+<div class="pg" id="pg-ev">
+  <div class="card">
+    <div class="card-hd"><div class="card-ttl">佐證資料統整總覽</div><span class="tag tg" id="EV-total-tag">共 0 份</span></div>
+    <div class="alert al-b">所有佐證可點「👁 預覽」查看原始圖片/PDF，或「⬇ 下載」提供查驗機構。</div>
+    <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:8px">
+      <div style="background:#141820;border:1px solid var(--bdr);border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:500;color:var(--acc-t)" id="ES-mat">0</div><div style="font-size:11px;color:var(--muted);margin-top:3px">工程材料</div></div>
+      <div style="background:#141820;border:1px solid var(--bdr);border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:500;color:var(--grn-t)" id="ES-eng">0</div><div style="font-size:11px;color:var(--muted);margin-top:3px">能源消耗</div></div>
+      <div style="background:#141820;border:1px solid var(--bdr);border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:500;color:var(--amb-t)" id="ES-wst">0</div><div style="font-size:11px;color:var(--muted);margin-top:3px">廢棄物</div></div>
+      <div style="background:#141820;border:1px solid var(--bdr);border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:500;color:var(--pur-t)" id="ES-trp">0</div><div style="font-size:11px;color:var(--muted);margin-top:3px">運輸車輛</div></div>
+      <div style="background:#141820;border:1px solid var(--bdr);border-radius:8px;padding:10px;text-align:center"><div style="font-size:20px;font-weight:500;color:var(--red-t)" id="ES-per">0</div><div style="font-size:11px;color:var(--muted);margin-top:3px">人員</div></div>
+    </div>
+  </div>
+  <div id="EV-cats-container"><div style="font-size:13px;color:var(--hint);padding:20px;text-align:center;background:var(--card);border:1px solid var(--bdr);border-radius:10px">尚未上傳任何佐證資料。</div></div>
+  <div class="card" style="margin-top:14px">
+    <div class="card-hd"><div class="card-ttl">33 項必備佐證清單</div></div>
+    <div class="prog-lbl"><span>整體收集進度</span><span id="CL-pct">0 / 33</span></div>
+    <div class="prog-bar"><div class="prog-fill" id="CL-bar" style="width:0%"></div></div>
+    <div id="CL-con"></div>
+  </div>
+</div>
+
+<!-- ═══ COMPLIANCE ═══ -->
+<div class="pg" id="pg-comp">
+  <div class="card">
+    <div class="card-hd"><div class="card-ttl">10% 門檻規則自動檢核</div></div>
+    <div class="alert al-b">原料取得 + 營造施工合計，佔比 ≥10% 需採一級數據。</div>
+    <div id="T10" style="font-size:13px;color:var(--hint)">請先輸入施工階段資料。</div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><div class="card-ttl">5% 重大性原則</div></div>
+    <div class="g3">
+      <div class="fg"><label>工人通勤 (kgCO₂e)</label><input type="number" id="EX-c" placeholder="自動帶入" oninput="cExcl()"></div>
+      <div class="fg"><label>辦公文具 (kgCO₂e)</label><input type="number" id="EX-s" placeholder="0" oninput="cExcl()"></div>
+      <div class="fg"><label>冷媒逸散 (kgCO₂e)</label><input type="number" id="EX-r" placeholder="0" oninput="cExcl()"></div>
+    </div>
+    <div id="EX-res" style="font-size:13px;color:var(--muted)">請先完成生命週期計算。</div>
+  </div>
+</div>
+
+<!-- ═══ SET-ENG ═══ -->
+<div class="pg" id="pg-set-eng">
+  <div class="panel-hd">
+    <div><div class="panel-ttl">能源排放係數</div><div class="panel-desc">係數來源：環境部產品碳足跡資訊網最新公告值（113年度）。直接點擊係數數字即可手動修改，修改後立即同步至資料輸入頁。</div></div>
+  </div>
+  <div class="alert al-b">⚠ 環境部 API 有跨域（CORS）限制，無法從瀏覽器直接呼叫。請依據環境部最新公告手動更新下方係數。</div>
+  <div class="card"><div class="card-hd"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:17px">🔥</span><div class="card-ttl">燃料類</div></div><span class="tag ta">kgCO₂e / L</span></div><div id="ENG-fuel"></div></div>
+  <div class="card"><div class="card-hd"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:17px">⚡</span><div class="card-ttl">電力</div></div><span class="tag tb">kgCO₂e / kWh</span></div><div id="ENG-elec"></div></div>
+  <div class="card"><div class="card-hd"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:17px">💧</span><div class="card-ttl">自來水</div></div><span class="tag tg">kgCO₂e / m³</span></div><div id="ENG-water"></div></div>
+  <div class="card"><div class="card-hd"><div style="display:flex;align-items:center;gap:8px"><span style="font-size:17px">❄</span><div class="card-ttl">冷媒（IPCC AR5）</div></div><span class="tag tr">kgCO₂e / kg</span></div><div class="alert al-a" style="margin-bottom:10px">冷媒 GWP 固定值，可手動修改。</div><div id="ENG-refrig"></div></div>
+</div>
+
+<!-- ═══ SET-MAT ═══ -->
+<div class="pg" id="pg-set-mat">
+  <div class="panel-hd">
+    <div><div class="panel-ttl">工程材料排放係數</div><div class="panel-desc">管理材料係數、單位與來源。修改後立即反映至資料輸入頁的自動帶入。</div></div>
+    <button class="btn btn-p" onclick="openMatModal()">+ 新增材料</button>
+  </div>
+  <div class="stats-strip">
+    <div class="stat-chip"><div class="stat-num" id="ms-total">0</div><div class="stat-lbl">材料類別數</div></div>
+    <div class="stat-chip"><div class="stat-num" id="ms-env">0</div><div class="stat-lbl">環境部係數</div></div>
+    <div class="stat-chip"><div class="stat-num" id="ms-other">0</div><div class="stat-lbl">EPD / 其他</div></div>
+  </div>
+  <div class="alert al-a">優先順序：① EPD（一級）→ ② 環境部（二級）→ ③ 國際庫（三級）</div>
+  <div class="tbl-wrap"><table>
+    <colgroup><col style="width:22%"><col style="width:10%"><col style="width:17%"><col style="width:13%"><col style="width:11%"><col style="width:27%"></colgroup>
+    <thead><tr><th>材料名稱</th><th>單位</th><th>係數 (kgCO₂e/單位)</th><th>來源</th><th>等級</th><th>操作</th></tr></thead>
+    <tbody id="MAT-tb"></tbody>
+  </table></div>
+</div>
+
+<!-- ═══ SET-VTYPE ═══ -->
+<div class="pg" id="pg-set-vtype">
+  <div class="panel-hd">
+    <div><div class="panel-ttl">車輛類型管理</div><div class="panel-desc">貨運：kgCO₂e/ton-km ｜ 人員：kgCO₂e/km。修改後立即反映至資料輸入頁。</div></div>
+    <button class="btn btn-p" onclick="openVtypeModal()">+ 新增車輛類型</button>
+  </div>
+  <div class="stats-strip">
+    <div class="stat-chip"><div class="stat-num" id="vs-total">0</div><div class="stat-lbl">車輛類型數</div></div>
+    <div class="stat-chip"><div class="stat-num" id="vs-cargo">0</div><div class="stat-lbl">貨運類</div></div>
+    <div class="stat-chip"><div class="stat-num" id="vs-person">0</div><div class="stat-lbl">人員/通勤類</div></div>
+  </div>
+  <div class="alert al-b">貨運參考：重型卡車 0.062、中型 0.080。人員參考：轎車 0.210、捷運 0.041。</div>
+  <div class="tbl-wrap"><table>
+    <colgroup><col style="width:26%"><col style="width:13%"><col style="width:17%"><col style="width:19%"><col style="width:25%"></colgroup>
+    <thead><tr><th>車輛名稱</th><th>類型</th><th>排放係數</th><th>單位</th><th>操作</th></tr></thead>
+    <tbody id="VTYPE-tb"></tbody>
+  </table></div>
+</div>
+
+</div></div></div>
+<div id="MODAL"></div>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+// ══════════════════════════════════════════════════
+// 共用資料庫 — 所有頁面共享同一份
+// ══════════════════════════════════════════════════
+let matDB=[
+  {id:'concrete',name:'混凝土',unit:'m³',coeff:237,src:'環境部',grade:2},
+  {id:'rebar',name:'鋼筋',unit:'kg',coeff:2.0,src:'環境部',grade:2},
+  {id:'steel',name:'鋼骨',unit:'kg',coeff:1.8,src:'環境部',grade:2},
+  {id:'formwork',name:'模板',unit:'m²',coeff:8.5,src:'環境部',grade:2},
+  {id:'tile',name:'磁磚/石材',unit:'m²',coeff:14.2,src:'環境部',grade:2},
+  {id:'alu',name:'鋁門窗',unit:'m²',coeff:62,src:'環境部',grade:2},
+  {id:'gypsum',name:'石膏板',unit:'m²',coeff:3.1,src:'環境部',grade:2},
+  {id:'cement',name:'水泥',unit:'kg',coeff:0.82,src:'環境部',grade:2},
+  {id:'glass',name:'玻璃',unit:'m²',coeff:28.5,src:'ecoinvent',grade:3},
+  {id:'paint',name:'油漆/塗料',unit:'kg',coeff:3.4,src:'ecoinvent',grade:3},
+];
+
+// 能源係數（設定頁可修改，資料輸入頁讀取同一份）
+let engCoeffDB={
+  fuel:[
+    {id:'diesel',name:'車用柴油',unit:'L',coeff:2.7060,src:'環境部',year:'113年度',isLive:false,icon:'🛢'},
+    {id:'gasoline',name:'車用汽油',unit:'L',coeff:2.2631,src:'環境部',year:'113年度',isLive:false,icon:'⛽'},
+    {id:'lpg',name:'液化石油氣（LPG）',unit:'L',coeff:1.6040,src:'環境部',year:'113年度',isLive:false,icon:'🔵'},
+  ],
+  elec:[
+    {id:'elec_tw',name:'台電電力',unit:'kWh',coeff:0.474,src:'經濟部能源署',year:'113年度',isLive:false,icon:'⚡'},
+    {id:'elec_green',name:'再生能源（綠電）',unit:'kWh',coeff:0.000,src:'—',year:'—',isLive:false,icon:'🌱'},
+  ],
+  water:[
+    {id:'water',name:'自來水（含供水處理）',unit:'m³',coeff:0.195,src:'環境部',year:'最新',isLive:false,icon:'💧'},
+  ],
+  refrig:[
+    {id:'r22',name:'R-22',unit:'kg',coeff:1810,src:'IPCC AR5',year:'固定',isLive:false,icon:'❄'},
+    {id:'r32',name:'R-32（低GWP）',unit:'kg',coeff:675,src:'IPCC AR5',year:'固定',isLive:false,icon:'❄'},
+    {id:'r134a',name:'R-134a',unit:'kg',coeff:1430,src:'IPCC AR5',year:'固定',isLive:false,icon:'❄'},
+    {id:'r410a',name:'R-410A',unit:'kg',coeff:2088,src:'IPCC AR5',year:'固定',isLive:false,icon:'❄'},
+    {id:'r404a',name:'R-404A',unit:'kg',coeff:3922,src:'IPCC AR5',year:'固定',isLive:false,icon:'❄'},
+  ]
+};
+
+// 車輛類型（設定頁可新增/修改，資料輸入頁讀取同一份）
+let vtypeDB=[
+  {id:'truck_10t',name:'重型卡車（10t+）',isPersonnel:false,coeff:0.062,unit:'kgCO₂e/ton-km'},
+  {id:'truck_5t',name:'中型卡車（5t）',isPersonnel:false,coeff:0.080,unit:'kgCO₂e/ton-km'},
+  {id:'pickup',name:'小貨車',isPersonnel:false,coeff:0.150,unit:'kgCO₂e/ton-km'},
+  {id:'mixer',name:'混凝土預拌車',isPersonnel:false,coeff:0.058,unit:'kgCO₂e/ton-km'},
+  {id:'sedan_gas',name:'自用轎車（汽油）',isPersonnel:true,coeff:0.210,unit:'kgCO₂e/km'},
+  {id:'sedan_ev',name:'電動車（EV）',isPersonnel:true,coeff:0.065,unit:'kgCO₂e/km'},
+  {id:'motorcycle',name:'機車',isPersonnel:true,coeff:0.110,unit:'kgCO₂e/km'},
+  {id:'bus',name:'公車',isPersonnel:true,coeff:0.089,unit:'kgCO₂e/km'},
+  {id:'mrt',name:'捷運/電車',isPersonnel:true,coeff:0.041,unit:'kgCO₂e/km'},
+  {id:'train',name:'火車/台鐵',isPersonnel:true,coeff:0.056,unit:'kgCO₂e/km'},
+  {id:'walk',name:'步行/腳踏車',isPersonnel:true,coeff:0.000,unit:'kgCO₂e/km'},
+];
+
+// 記錄資料
+let matData=[],engData=[],wstData=[],trpData=[],perData=[],dqiRecs=[];
+let pendingFiles={mat:[],eng:[],wst:[],trp:[],per:[]};
+let chkState={};let chartInst=null;
+let currentAIResult={};
+
+const CHECKS=[
+  {id:'c01',text:'建築執照',star:'★★★',g:'動工前'},{id:'c02',text:'平面圖',star:'★★★',g:'動工前'},
+  {id:'c03',text:'結構計算書',star:'★★☆',g:'動工前'},{id:'c04',text:'工程契約書',star:'★★☆',g:'動工前'},
+  {id:'c05',text:'供應商 EPD',star:'★★★',g:'動工前'},{id:'c06',text:'排放係數清冊',star:'★★★',g:'動工前'},
+  {id:'c07',text:'碳管理教育訓練',star:'★☆☆',g:'動工前'},
+  {id:'c08',text:'A-1 施工碳管理日誌',star:'★★★',g:'每日'},{id:'c09',text:'A-9 油耗及加油收據',star:'★★★',g:'每日'},
+  {id:'c10',text:'A-2 過磅單/送貨單',star:'★★★',g:'每日'},{id:'c11',text:'A-3 機具簽認單',star:'★★☆',g:'每日'},
+  {id:'c12',text:'A-6 清運聯單',star:'★★☆',g:'每日'},
+  {id:'c13',text:'A-4 電表抄表照片',star:'★★★',g:'每月'},{id:'c14',text:'A-5 水表抄表照片',star:'★★★',g:'每月'},
+  {id:'c15',text:'電力帳單正本',star:'★★★',g:'每月'},{id:'c16',text:'水費帳單正本',star:'★★★',g:'每月'},
+  {id:'c17',text:'A-7 公務運輸紀錄',star:'★☆☆',g:'每月'},{id:'c18',text:'A-8 月報更新',star:'★★★',g:'每月'},
+  {id:'c19',text:'B-1 材料核對',star:'★★★',g:'完工後'},{id:'c20',text:'B-3 運輸彙總',star:'★★☆',g:'完工後'},
+  {id:'c21',text:'B-5 廢棄物/回收率',star:'★★☆',g:'完工後'},{id:'c22',text:'能耗模擬報告(D-3)',star:'★★★',g:'完工後'},
+  {id:'c23',text:'修繕計畫(D-4)',star:'★☆☆',g:'完工後'},{id:'c24',text:'拆除估算(D-5)',star:'★☆☆',g:'完工後'},
+  {id:'c25',text:'C-2 DQI 評估',star:'★★★',g:'完工後'},{id:'c26',text:'C-4 不確定性分析',star:'★★★',g:'完工後'},
+  {id:'c27',text:'D-1 碳排彙總表',star:'★★★',g:'完工後'},{id:'c28',text:'D-2 功能單位計算',star:'★★★',g:'完工後'},
+  {id:'c29',text:'碳足跡盤查報告',star:'★★★',g:'完工後'},{id:'c30',text:'查證聲明書',star:'★★★',g:'完工後'},
+  {id:'c31',text:'建築面積計算書',star:'★★★',g:'完工後'},{id:'c32',text:'E-1 減量措施記錄',star:'★☆☆',g:'完工後'},
+  {id:'c33',text:'碳標籤申請文件',star:'★★☆',g:'完工後'},
+];
+CHECKS.forEach(c=>chkState[c.id]=false);
+
+const GC={1:'tg',2:'tb',3:'ta'};const GT={1:'一級',2:'二級',3:'三級'};
+const CAT_COLORS={mat:'#378ADD',eng:'#1D9E75',wst:'#BA7517',trp:'#7F77DD',per:'#D85A30'};
+const CAT_LABELS={mat:'工程材料',eng:'能源消耗',wst:'廢棄物',trp:'運輸車輛',per:'人員'};
+const UNITS=['kg','m²','m³','m','片','組','樘','噸','L','個','式'];
+
+// ══ 輔助：取得所有能源係數（flat list）══
+function getAllEngCoeffs(){
+  const all=[];
+  for(const grp of Object.values(engCoeffDB))for(const e of grp)all.push(e);
+  return all;
+}
+function getEngCoeff(id){return getAllEngCoeffs().find(e=>e.id===id);}
+
+// ══ Date row ══
+function makeDR(id){
+  const el=document.getElementById(id);
+  if(!el)return;
+  const t=new Date();
+  el.value=t.toISOString().split('T')[0];
+}
+function getDate(id){
+  const el=document.getElementById(id);
+  if(!el||!el.value)return'—';
+  return el.value.replace(/-/g,'/');
+}
+
+// ══ Nav ══
+function nav(p,btn){
+  document.querySelectorAll('.pg').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
+  document.getElementById('pg-'+p).classList.add('on');btn.classList.add('on');
+  const t={dash:'儀表板',input:'資料輸入',lc:'生命週期計算',ev:'佐證資料總覽',comp:'合規檢核','set-eng':'能源排放係數','set-mat':'材料排放係數','set-vtype':'車輛類型管理'};
+  document.getElementById('TBT').textContent=t[p]||p;
+  if(p==='dash')updateDash();
+  if(p==='input'){buildMatSel();buildEngSel();buildVtypeSel();}
+  if(p==='set-eng'){renderEngPanels();}
+  if(p==='set-mat'){renderMatSet();}
+  if(p==='set-vtype'){renderVtypeSet();}
+  if(p==='ev'){renderEvSummary();renderChecklist();}
+  if(p==='comp')updateComp();
+  if(p==='lc'){syncElecCoeffToLC();}
+}
+function itab(t,btn){
+  document.querySelectorAll('.itab').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.tab-btn').forEach(x=>x.classList.remove('on'));
+  document.getElementById('it-'+t).classList.add('on');btn.classList.add('on');
+}
+function setTab(p,btn){
+  document.querySelectorAll('.set-panel').forEach(x=>x.classList.remove('on'));
+  document.querySelectorAll('.set-tab').forEach(x=>x.classList.remove('on'));
+  document.getElementById('sp-'+p).classList.add('on');btn.classList.add('on');
+}
+
+// ══ 建立選單（讀取共用 DB）══
+function buildMatSel(){
+  const s=document.getElementById('I-mc');if(!s)return;
+  const cur=s.value;
+  s.innerHTML='<option value="">— 選擇 —</option>'+matDB.map(m=>`<option value="${m.id}">${m.name}（${m.unit}）</option>`).join('');
+  if(cur)s.value=cur;
+}
+function buildEngSel(){
+  const s=document.getElementById('I-et');if(!s)return;
+  const cur=s.value;
+  s.innerHTML='<option value="">—</option>'+getAllEngCoeffs().map(e=>`<option value="${e.id}">${e.icon||''} ${e.name}（${e.unit}）</option>`).join('');
+  if(cur)s.value=cur;
+  // 更新 formula 顯示
+  const fuelItems=engCoeffDB.fuel;
+  const elec=engCoeffDB.elec[0];
+  const water=engCoeffDB.water[0];
+  const fEl=document.getElementById('eng-formula');
+  if(fEl)fEl.textContent=fuelItems.map(f=>`${f.name} ${f.coeff}`).join(' ｜ ')+` ｜ 電力 ${elec.coeff} ｜ 自來水 ${water.coeff} kgCO₂e/單位`;
+}
+function buildVtypeSel(){
+  const s=document.getElementById('T-vtype');if(!s)return;
+  const cur=s.value;
+  s.innerHTML='<option value="">— 選擇 —</option>'+vtypeDB.map(v=>`<option value="${v.id}">${v.isPersonnel?'🚗':'🚚'} ${v.name}</option>`).join('');
+  if(cur)s.value=cur;
+}
+function syncElecCoeffToLC(){
+  const elec=engCoeffDB.elec[0];
+  const el=document.getElementById('U-ef');
+  if(el&&elec)el.value=elec.coeff;
+}
+
+// ══ Mat ══
+function applyMC(){const m=matDB.find(x=>x.id===document.getElementById('I-mc').value);if(m){document.getElementById('I-mco').value=m.coeff;document.getElementById('I-mu').value=m.unit;}cMat();}
+function cMat(){const q=parseFloat(document.getElementById('I-mq').value)||0,c=parseFloat(document.getElementById('I-mco').value)||0;document.getElementById('MR').textContent=q*c>0?(q*c).toFixed(2):'—';}
+function addMat(){
+  const id=document.getElementById('I-mc').value,qty=parseFloat(document.getElementById('I-mq').value),coeff=parseFloat(document.getElementById('I-mco').value);
+  if(!id||!qty||!coeff){alert('請填寫完整資料');return;}
+  const m=matDB.find(x=>x.id===id);
+  var matRec={name:m?m.name:id,qty,unit:document.getElementById('I-mu').value||'kg',coeff,sup:document.getElementById('I-ms').value||'—',grade:document.getElementById('I-mg').value,date:getDate('mat-dr'),emission:qty*coeff,files:[...pendingFiles.mat]};
+  matData.push(matRec);
+  pendingFiles.mat=[];renderChips('mat');renderMT();updateDash();
+  syncToSheets('mat',matRec);syncSummaryToSheets();
+  document.getElementById('mat-ai-result').style.display='none';
+}
+function renderMT(){
+  const tb=document.getElementById('MT');document.getElementById('MC').textContent=matData.length+' 筆';
+  if(!matData.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr>';return;}
+  tb.innerHTML=matData.map((r,i)=>`<tr><td title="${r.name}">${r.name}</td><td>${r.qty.toLocaleString()}</td><td>${r.unit}</td><td>${r.coeff}</td><td>${r.emission.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'mat')}</td><td><button class="btn btn-sm btn-d" onclick="deleteRec('mat',${i})">刪除</button></td></tr>`).join('');
+}
+
+// ══ Eng ══
+function applyEC(){const e=getEngCoeff(document.getElementById('I-et').value);if(e)document.getElementById('I-eco').value=e.coeff;cEng();}
+function cEng(){const q=parseFloat(document.getElementById('I-eq').value)||0,c=parseFloat(document.getElementById('I-eco').value)||0;document.getElementById('ER').textContent=q*c>0?(q*c).toFixed(2):'—';}
+function addEng(){
+  const id=document.getElementById('I-et').value,qty=parseFloat(document.getElementById('I-eq').value),coeff=parseFloat(document.getElementById('I-eco').value);
+  if(!id||!qty||!coeff){alert('請填寫完整資料');return;}
+  const e=getEngCoeff(id);
+  var engRec={name:e?e.name:id,unit:e?e.unit:'單位',qty,coeff,grade:document.getElementById('I-eg').value,date:getDate('eng-dr'),emission:qty*coeff,files:[...pendingFiles.eng]};
+  engData.push(engRec);
+  pendingFiles.eng=[];renderChips('eng');renderET();updateDash();
+  syncToSheets('eng',engRec);syncSummaryToSheets();
+  document.getElementById('eng-ai-result').style.display='none';
+}
+function renderET(){
+  const tb=document.getElementById('ET');
+  if(!engData.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr>';return;}
+  tb.innerHTML=engData.map((r,i)=>`<tr><td>${r.name}</td><td>${r.qty.toLocaleString()}</td><td>${r.unit}</td><td>${r.coeff}</td><td>${r.emission.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'eng')}</td><td><button class="btn btn-sm btn-d" onclick="deleteRec('eng',${i})">刪除</button></td></tr>`).join('');
+}
+
+// ══ Wst ══
+function cWst(){const q=parseFloat(document.getElementById('I-wq').value)||0,c=parseFloat(document.getElementById('I-wm').value)||0.5;document.getElementById('WR').textContent=(q*1000*c)>0?(q*1000*c).toFixed(2):'—';}
+function addWst(){
+  const type=document.getElementById('I-wt').value,qty=parseFloat(document.getElementById('I-wq').value),c=parseFloat(document.getElementById('I-wm').value)||0.5;
+  if(!qty){alert('請填寫數量');return;}
+  const mN={'0.5':'掩埋','0.05':'回收','0.3':'焚化'},tN={concrete_w:'混凝土廢棄',rebar_w:'鋼筋廢棄',general:'一般廢棄物',recyclable:'資源回收',hazardous:'有害廢棄物'};
+  var wstRec={type:tN[type],qty,method:mN[String(c)],supp:document.getElementById('I-wsupp').value||'—',grade:document.getElementById('I-wg').value,date:getDate('wst-dr'),emission:qty*1000*c,files:[...pendingFiles.wst]};
+  wstData.push(wstRec);
+  pendingFiles.wst=[];renderChips('wst');renderWT();updateDash();
+  syncToSheets('wst',wstRec);syncSummaryToSheets();
+  document.getElementById('wst-ai-result').style.display='none';
+}
+function renderWT(){
+  const tb=document.getElementById('WT');
+  if(!wstData.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr>';return;}
+  tb.innerHTML=wstData.map((r,i)=>`<tr><td>${r.type}</td><td>${r.qty}</td><td>${r.method}</td><td>${r.emission.toFixed(2)}</td><td title="${r.supp}">${r.supp}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'wst')}</td><td><button class="btn btn-sm btn-d" onclick="deleteRec('wst',${i})">刪</button></td></tr>`).join('');
+}
+
+// ══ Trp ══
+function onTrpTypeChange(){
+  const t=document.getElementById('T-type').value,isPerson=t==='commute'||t==='biz';
+  document.getElementById('T-load-wrap').style.display=isPerson?'none':'block';
+  document.getElementById('T-count-wrap').style.display=isPerson?'block':'none';
+  cTrp();
+}
+function onVtypeChange(){const v=vtypeDB.find(x=>x.id===document.getElementById('T-vtype').value);if(v)document.getElementById('T-coeff').value=v.coeff;cTrp();}
+function openMaps(){
+  const f=document.getElementById('T-from').value.trim(),t=document.getElementById('T-to').value.trim();
+  if(!f&&!t){alert('請填寫出發地或目的地');return false;}
+  window.open('https://www.google.com/maps/dir/'+encodeURIComponent(f||'')+'/'+encodeURIComponent(t||'')+'/?travelmode=driving','_blank');return false;
+}
+function cTrp(){
+  const t=document.getElementById('T-type').value,isPerson=t==='commute'||t==='biz';
+  const dist=parseFloat(document.getElementById('T-dist').value)||0,trips=parseFloat(document.getElementById('T-trips').value)||1,coeff=parseFloat(document.getElementById('T-coeff').value)||0;
+  let em=0;
+  if(isPerson){const n=parseFloat(document.getElementById('T-pcount').value)||1;em=n*dist*2*coeff*trips;}
+  else{const l=parseFloat(document.getElementById('T-load').value)||0;em=dist*l*coeff*trips;}
+  document.getElementById('TR').textContent=em>0?em.toFixed(2):'—';
+}
+function addTrp(){
+  const typeEl=document.getElementById('T-type'),type=typeEl.value,typeName=typeEl.options[typeEl.selectedIndex].text;
+  const plate=document.getElementById('T-plate').value||'—';
+  const vtypeEl=document.getElementById('T-vtype'),vtypeName=vtypeEl.value?vtypeEl.options[vtypeEl.selectedIndex].text:'—';
+  const from=document.getElementById('T-from').value||'—',to=document.getElementById('T-to').value||'—';
+  const dist=parseFloat(document.getElementById('T-dist').value)||0;
+  if(!dist){alert('請填寫路線距離');return;}
+  const trips=parseFloat(document.getElementById('T-trips').value)||1,coeff=parseFloat(document.getElementById('T-coeff').value)||0;
+  const isPerson=type==='commute'||type==='biz';
+  const pcount=parseFloat(document.getElementById('T-pcount').value)||1,load=parseFloat(document.getElementById('T-load').value)||0;
+  const em=isPerson?pcount*dist*2*coeff*trips:dist*load*coeff*trips;
+  var trpRec={typeName,plate,vtypeName,from,to,dist,trips,coeff,load,pcount,isPerson,grade:document.getElementById('T-grade').value,date:getDate('trp-dr'),emission:em,files:[...pendingFiles.trp]};
+  trpData.push(trpRec);
+  pendingFiles.trp=[];renderChips('trp');renderTT();updateDash();
+  syncToSheets('trp',trpRec);syncSummaryToSheets();
+  document.getElementById('trp-ai-result').style.display='none';
+}
+function renderTT(){
+  const tb=document.getElementById('TT');document.getElementById('TC').textContent=trpData.length+' 筆';
+  if(!trpData.length){tb.innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr>';return;}
+  tb.innerHTML=trpData.map((r,i)=>`<tr><td title="${r.typeName}">${r.typeName}</td><td>${r.plate}</td><td title="${r.vtypeName}">${r.vtypeName}</td><td title="${r.from}">${r.from}</td><td title="${r.to}">${r.to}</td><td>${r.dist}</td><td>${r.emission.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'trp')}</td><td><button class="btn btn-sm btn-d" onclick="deleteRec('trp',${i})">刪</button></td></tr>`).join('');
+}
+
+// ══ Per ══
+function cPer(){const n=parseFloat(document.getElementById('P-count').value)||0,h=parseFloat(document.getElementById('P-hrs').value)||0;const s=n*h*0.082;document.getElementById('PR').textContent=s>0?s.toFixed(2):'—';}
+function addPer(){
+  const catEl=document.getElementById('P-cat'),n=parseFloat(document.getElementById('P-count').value),h=parseFloat(document.getElementById('P-hrs').value)||8;
+  if(!n){alert('請填寫人數');return;}
+  const site=n*h*0.082;
+  var perRec={cat:catEl.options[catEl.selectedIndex].text,n,h,site,emission:site,grade:document.getElementById('P-grade').value,date:getDate('per-dr'),files:[...pendingFiles.per]};
+  perData.push(perRec);
+  pendingFiles.per=[];renderChips('per');renderPT();updateDash();
+  syncToSheets('per',perRec);syncSummaryToSheets();
+  document.getElementById('per-ai-result').style.display='none';
+}
+function renderPT(){
+  const tb=document.getElementById('PT');document.getElementById('PC').textContent=perData.length+' 筆';
+  if(!perData.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr>';return;}
+  tb.innerHTML=perData.map((r,i)=>`<tr><td>${r.cat}</td><td>${r.n}</td><td>${r.h}hr</td><td>${r.site.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'per')}</td><td><button class="btn btn-sm btn-d" onclick="deleteRec('per',${i})">刪除</button></td></tr>`).join('');
+}
+
+// ══ LC ══
+function cLC(){
+  const area=parseFloat(document.getElementById('LC-area').value)||0,life=parseFloat(document.getElementById('LC-life').value)||60;
+  const ps=[1,2,3,4,5].map(i=>parseFloat(document.getElementById('LC-p'+i).value)||0),total=ps.reduce((a,b)=>a+b,0);
+  document.getElementById('LC-total').textContent=total>0?total.toFixed(2):'—';
+  document.getElementById('LC-func').textContent=(total>0&&area>0)?((total*1000)/area/life).toFixed(3):'—';
+  updateDash();
+}
+function cUse(){
+  const sum=['U-ac','U-lt','U-el','U-wt'].reduce((a,id)=>a+(parseFloat(document.getElementById(id).value)||0),0),ef=parseFloat(document.getElementById('U-ef').value)||0.474;
+  document.getElementById('U-res').textContent=(sum*ef*60/1000)>0?(sum*ef*60/1000).toFixed(2):'—';
+}
+
+// ══ File handling ══
+async function readFileAsDataURL(file){return new Promise((res,rej)=>{const r=new FileReader();r.onload=()=>res(r.result);r.onerror=rej;r.readAsDataURL(file);});}
+function triggerUpload(id){document.getElementById(id).click();}
+function triggerAI(cat){document.getElementById(cat+'-ai-inp').click();}
+function removePend(cat,i){pendingFiles[cat].splice(i,1);renderChips(cat);}
+async function addEmbed(cat,inp,useDrive){
+  var status=document.getElementById('gdrive-status');
+  for(var i=0;i<inp.files.length;i++){
+    var f=inp.files[i];
+    var dataURL=await readFileAsDataURL(f);
+    if(useDrive && gdriveToken){
+      // 上傳到 Drive
+      if(status) status.textContent='☁ 上傳中 '+f.name+' ...';
+      var meta={name:f.name,parents:gdriveFolderId?[gdriveFolderId]:[]};
+      var form=new FormData();
+      form.append('metadata',new Blob([JSON.stringify(meta)],{type:'application/json'}));
+      form.append('file',f);
+      try{
+        var resp=await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',{
+          method:'POST',headers:{Authorization:'Bearer '+gdriveToken},body:form
+        });
+        var data=await resp.json();
+        if(data.id){
+          pendingFiles[cat].push({
+            name:f.name,size:(f.size/1024).toFixed(1),
+            ext:f.name.split('.').pop().toUpperCase(),
+            mime:f.type,isImage:f.type.startsWith('image/'),
+            isDrive:true,driveId:data.id,
+            driveViewLink:data.webViewLink,
+            driveDownloadLink:'https://drive.google.com/uc?export=download&id='+data.id,
+            driveThumbLink:f.type.startsWith('image/')?'https://drive.google.com/thumbnail?id='+data.id+'&sz=w400':null,
+            dataURL:dataURL  // 保留備份
+          });
+          if(status){status.textContent='✅ 已上傳至 Drive：'+f.name;status.style.color='var(--grn-t)';}
+        } else {
+          // Drive 失敗，存本機
+          pendingFiles[cat].push({name:f.name,size:(f.size/1024).toFixed(1),ext:f.name.split('.').pop().toUpperCase(),dataURL,mime:f.type,isImage:f.type.startsWith('image/'),isDrive:false});
+          if(status){status.textContent='⚠ Drive 上傳失敗，存本機：'+f.name;status.style.color='var(--amb-t)';}
+        }
+      }catch(e){
+        pendingFiles[cat].push({name:f.name,size:(f.size/1024).toFixed(1),ext:f.name.split('.').pop().toUpperCase(),dataURL,mime:f.type,isImage:f.type.startsWith('image/'),isDrive:false});
+        console.warn('drive upload error:',e);
+      }
+    } else {
+      // 本機儲存
+      pendingFiles[cat].push({name:f.name,size:(f.size/1024).toFixed(1),ext:f.name.split('.').pop().toUpperCase(),dataURL,mime:f.type,isImage:f.type.startsWith('image/'),isDrive:false});
+    }
+  }
+  renderChips(cat);inp.value='';
+}
+
+// Drive 上傳：觸發 file input 但標記為 Drive 模式
+function drivePickViaInput(cat){
+  if(!gdriveToken){
+    var client=google.accounts.oauth2.initTokenClient({
+      client_id:GDRIVE_CLIENT_ID,scope:GDRIVE_SCOPES,
+      callback:function(resp){
+        if(resp.error)return;
+        gdriveToken=resp.access_token;gdriveConnected=true;
+        localStorage.setItem('sacurn_gdrive_token',gdriveToken);
+        gdriveSetStatus('已連結',true);
+        gdriveEnsureFolder().then(function(){drivePickViaInput(cat);});
+      }
+    });
+    client.requestAccessToken();return;
+  }
+  var inp=document.getElementById(cat+'-ev-inp');
+  if(!inp)return;
+  // 用 setAttribute 把 cat 值直接硬編碼，避免閉包問題
+  inp.setAttribute('onchange','addEmbed("'+cat+'",this,true)');
+  inp.click();
+}
+function renderChips(cat){
+  const c=document.getElementById(cat+'-ev-files');if(!c)return;
+  if(!pendingFiles[cat].length){c.innerHTML='<span style="font-size:12px;color:var(--hint)">尚未上傳</span>';return;}
+  c.innerHTML=pendingFiles[cat].map((f,i)=>`<div class="ev-chip"><span class="ev-chip-ext" style="background:${CAT_COLORS[cat]}">${f.ext}</span><span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:140px">${f.name}</span><div class="ev-chip-acts">${f.isImage?`<button class="ev-chip-btn" onclick="previewPend('${cat}',${i})">預覽</button>`:''}<button class="ev-chip-btn" onclick="dlPend('${cat}',${i})">⬇</button><span class="ev-chip-rm" onclick="removePend('${cat}',${i})">×</span></div></div>`).join('');
+}
+function previewPend(cat,i){const f=pendingFiles[cat][i];openFileModal(f);}
+function dlPend(cat,i){const f=pendingFiles[cat][i];if(f?.dataURL)downloadFile(f.dataURL,f.name);}
+function renderFileBtn(files,recIdx,cat){
+  if(!files?.length)return '<span style="color:var(--hint);font-size:11px">—</span>';
+  return files.map((f,fi)=>`<button class="ev-chip-btn" onclick="openFileModalByRec('${cat}',${recIdx},${fi})">F${fi+1}</button>`).join('');
+}
+function getAllRecs(){return{mat:matData,eng:engData,wst:wstData,trp:trpData,per:perData};}
+function openFileModalByRec(cat,ri,fi){
+  const rec=getAllRecs()[cat]?.[ri];if(!rec)return;const f=rec.files[fi];if(!f)return;openFileModal(f);
+}
+function openFileModal(f){
+  openModal(`<div style="min-width:320px;max-width:680px">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">
+      <div><div style="font-size:14px;font-weight:500;color:var(--txt)">${f.name}</div><div style="font-size:11px;color:var(--hint);margin-top:2px">${f.size} KB</div></div>
+      <button class="btn btn-sm" onclick="closeModal()">✕</button>
+    </div>
+    ${f.isImage&&f.dataURL?`<img src="${f.dataURL}" class="preview-img" alt="${f.name}">`:
+      f.mime==='application/pdf'&&f.dataURL?`<iframe src="${f.dataURL}" class="preview-pdf" title="${f.name}"></iframe>`:
+      `<div style="text-align:center;padding:30px;color:var(--muted);background:#141820;border-radius:8px">此格式需下載後查看</div>`}
+    <div style="margin-top:12px;display:flex;justify-content:flex-end">
+      <button class="btn btn-p" onclick="downloadFile('${f.dataURL}','${f.name}')">⬇ 下載</button>
+    </div>
+  </div>`);
+}
+function downloadFile(dataURL,name){const a=document.createElement('a');a.href=dataURL;a.download=name;a.click();}
+
+// ══ AI OCR ══
+const AI_PROMPTS={
+  mat:`這是工程材料截圖（過磅單/送貨單等）。提取以下欄位，純JSON回應：{"material_name":"材料名稱","quantity":"數量","unit":"單位","supplier":"供應商","date":"日期YYYY-MM-DD"}`,
+  eng:`這是能源消耗截圖（電費帳單/加油收據等）。提取以下欄位，純JSON回應：{"energy_type":"能源類型（柴油/汽油/電力/自來水）","quantity":"消耗量","unit":"單位","date":"日期YYYY-MM-DD","meter_no":"表號"}`,
+  wst:`這是廢棄物清運截圖（聯單/過磅單等）。提取以下欄位，純JSON回應：{"waste_type":"廢棄物類型","quantity":"數量","supplier":"清運公司","date":"日期YYYY-MM-DD","manifest_no":"聯單號"}`,
+  trp:`這是運輸截圖（行車紀錄/Maps路線等）。提取以下欄位，純JSON回應：{"origin":"出發地","destination":"目的地","distance_km":"距離","plate":"車牌","date":"日期YYYY-MM-DD"}`,
+  per:`這是人員出勤截圖。提取以下欄位，純JSON回應：{"worker_count":"人數","hours_per_person":"工時","role":"類別","date":"日期YYYY-MM-DD"}`,
+};
+const AI_LABELS={
+  mat:{material_name:'材料名稱',quantity:'數量',unit:'單位',supplier:'供應商',date:'日期'},
+  eng:{energy_type:'能源類型',quantity:'消耗量',unit:'單位',date:'日期',meter_no:'表號'},
+  wst:{waste_type:'廢棄物類型',quantity:'數量',supplier:'清運公司',date:'日期',manifest_no:'聯單號'},
+  trp:{origin:'出發地',destination:'目的地',distance_km:'距離(km)',plate:'車牌',date:'日期'},
+  per:{worker_count:'人數',hours_per_person:'工時/人',role:'類別',date:'日期'},
+};
+async function runAI(cat,inp){
+  const file=inp.files[0];if(!file)return;inp.value='';
+  const dataURL=await readFileAsDataURL(file);
+  pendingFiles[cat].push({name:file.name,size:(file.size/1024).toFixed(1),ext:file.name.split('.').pop().toUpperCase(),dataURL,mime:file.type,isImage:file.type.startsWith('image/')});
+  renderChips(cat);
+  const panel=document.getElementById(cat+'-ai-result');
+  panel.style.display='block';
+  panel.innerHTML=`<div class="ai-result-ttl"><div class="spin"></div> AI 辨識中，請稍候…</div>`;
+  try{
+    const base64=dataURL.split(',')[1];
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:file.type,data:base64}},{type:'text',text:AI_PROMPTS[cat]}]}]})});
+    const data=await resp.json();
+    const raw=data.content?.map(b=>b.text||'').join('').trim();
+    const jm=raw.match(/\{[\s\S]*\}/);
+    if(!jm)throw new Error('無法解析 JSON');
+    const parsed=JSON.parse(jm[0]);
+    currentAIResult[cat]=parsed;
+    showAIResult(cat,parsed);
+  }catch(e){
+    panel.innerHTML=`<div class="ai-result-ttl" style="color:var(--red-t)">⚠ 辨識失敗：${e.message}</div><div style="font-size:12px;color:var(--muted);margin-top:4px">圖片可能不清楚，請手動填寫欄位。</div>`;
+  }
+}
+function showAIResult(cat,parsed){
+  const panel=document.getElementById(cat+'-ai-result');
+  const labels=AI_LABELS[cat]||{};
+  const fields=Object.entries(parsed).filter(([k,v])=>v!==null&&v!==''&&labels[k]);
+  if(!fields.length){panel.innerHTML=`<div class="ai-result-ttl">✅ 辨識完成，未找到可填入的欄位。</div>`;return;}
+  panel.innerHTML=`<div class="ai-result-ttl">✅ AI 辨識完成 — 確認後點「套用至表單」</div>
+    <div class="ai-field-grid">${fields.map(([k,v])=>`<div class="ai-field"><div class="ai-field-lbl">${labels[k]||k}</div><div class="ai-field-val">${v}</div></div>`).join('')}</div>
+    <div class="ai-actions"><button class="ai-apply-btn" onclick="applyAI('${cat}')">✓ 套用至表單</button><button class="btn btn-sm" onclick="document.getElementById('${cat}-ai-result').style.display='none'">略過</button></div>`;
+}
+function applyAI(cat){
+  const r=currentAIResult[cat];if(!r)return;
+  function setV(id,v){if(v&&v!=='null'){const el=document.getElementById(id);if(el)el.value=v;}}
+  function setDate(drId,dateStr){
+    if(!dateStr||dateStr==='null')return;
+    const el=document.getElementById(drId);
+    if(el)el.value=dateStr.replace(/\//g,'-');
+  }
+  if(cat==='mat'){
+    setV('I-mq',r.quantity);setV('I-ms',r.supplier);
+    if(r.material_name){const lc=r.material_name.toLowerCase();const m=matDB.find(x=>lc.includes(x.name.toLowerCase())||x.name.toLowerCase().includes(lc.slice(0,3)));if(m){document.getElementById('I-mc').value=m.id;applyMC();}}
+    setDate('mat-dr',r.date);cMat();
+  }else if(cat==='eng'){
+    setV('I-eq',r.quantity);
+    if(r.energy_type){const s=document.getElementById('I-et');const lc=r.energy_type.toLowerCase();const all=getAllEngCoeffs();let found=all.find(e=>lc.includes(e.name.toLowerCase().slice(0,2)));if(found){s.value=found.id;applyEC();}}
+    setDate('eng-dr',r.date);cEng();
+  }else if(cat==='wst'){
+    setV('I-wq',r.quantity);setV('I-wsupp',r.supplier);setDate('wst-dr',r.date);cWst();
+  }else if(cat==='trp'){
+    setV('T-dist',r.distance_km);setV('T-from',r.origin);setV('T-to',r.destination);setV('T-plate',r.plate);setDate('trp-dr',r.date);cTrp();
+  }else if(cat==='per'){
+    setV('P-count',r.worker_count);setV('P-hrs',r.hours_per_person);setDate('per-dr',r.date);cPer();
+  }
+  document.getElementById(cat+'-ai-result').innerHTML=`<div class="ai-result-ttl" style="color:var(--grn-t)">✅ 已套用，請確認後新增記錄。</div>`;
+}
+
+// ══ Compliance ══
+function cExcl(){
+  const total=['EX-c','EX-s','EX-r'].reduce((a,id)=>a+(parseFloat(document.getElementById(id).value)||0),0),lc=parseFloat(document.getElementById('LC-total').textContent)||0;
+  const el=document.getElementById('EX-res');
+  if(lc<=0){el.textContent='請先完成生命週期計算。';return;}
+  const pct=(total/(lc*1000))*100,ok=pct<=5;
+  el.innerHTML=`排除合計：<strong>${total.toFixed(0)} kgCO₂e</strong>，佔 <strong>${pct.toFixed(2)}%</strong> <span class="tag ${ok?'tg':'tr'}">${ok?'✓ 符合 5%':'✗ 超過 5%'}</span>`;
+  document.getElementById('C5').textContent=ok?'✓ 合規':'✗ 超標';document.getElementById('C5').className='tag '+(ok?'tg':'tr');
+}
+function updateComp(){
+  const matT=matData.reduce((s,r)=>s+r.emission,0),engT=engData.reduce((s,r)=>s+r.emission,0),wstT=wstData.reduce((s,r)=>s+r.emission,0),trpT=trpData.reduce((s,r)=>s+r.emission,0),perT=perData.reduce((s,r)=>s+r.emission,0);
+  const tot=matT+engT+wstT+trpT+perT;const el=document.getElementById('T10');
+  if(tot<=0){el.innerHTML='<div style="font-size:13px;color:var(--hint)">請先輸入施工階段資料。</div>';return;}
+  const items=[{name:'工程材料',val:matT},{name:'運輸車輛',val:trpT},{name:'施工機具',val:engData.filter(r=>{const e=getEngCoeff(Object.keys(AI_PROMPTS).find(k=>k));return r.name.includes('柴油')||r.name.includes('汽油')}).reduce((s,r)=>s+r.emission,0)},{name:'工地電力',val:engData.filter(r=>r.name.includes('電力')).reduce((s,r)=>s+r.emission,0)},{name:'廢棄物',val:wstT},{name:'人員現場',val:perT}];
+  el.innerHTML='<div class="tbl-wrap"><table><colgroup><col style="width:20%"><col style="width:18%"><col style="width:13%"><col style="width:22%"><col style="width:27%"></colgroup><thead><tr><th>排放項目</th><th>kgCO₂e</th><th>佔比</th><th>數據要求</th><th>狀態</th></tr></thead><tbody>'+
+    items.map(it=>{const p=tot>0?(it.val/tot*100):0,need=p>=10;return`<tr><td>${it.name}</td><td>${it.val.toFixed(1)}</td><td>${p.toFixed(1)}%</td><td>${need?'<span class="tag tr">需一級數據</span>':'<span class="tag tb">可用二級</span>'}</td><td><span class="tag ta">待確認</span></td></tr>`;}).join('')+'</tbody></table></div>';
+  document.getElementById('C10').textContent='已計算';document.getElementById('C10').className='tag ta';
+  const commute=trpData.filter(r=>r.isPerson).reduce((s,r)=>s+r.emission,0);
+  const ec=document.getElementById('EX-c');if(ec&&commute>0)ec.value=commute.toFixed(2);
+}
+
+// ══ Evidence summary ══
+function renderEvSummary(){
+  const counts={mat:0,eng:0,wst:0,trp:0,per:0},allFiles={mat:[],eng:[],wst:[],trp:[],per:[]};
+  const ds={mat:matData,eng:engData,wst:wstData,trp:trpData,per:perData};
+  Object.keys(ds).forEach(cat=>ds[cat].forEach((r,ri)=>r.files?.forEach((f,fi)=>{allFiles[cat].push({f,rec:r,ri,fi});counts[cat]++;})));
+  const total=Object.values(counts).reduce((a,b)=>a+b,0);
+  document.getElementById('EV-total-tag').textContent='共 '+total+' 份';
+  Object.keys(counts).forEach(cat=>document.getElementById('ES-'+cat).textContent=counts[cat]);
+  document.getElementById('D-files').textContent=total;
+  const con=document.getElementById('EV-cats-container');
+  if(total===0){con.innerHTML='<div style="font-size:13px;color:var(--hint);padding:20px;text-align:center;background:var(--card);border:1px solid var(--bdr);border-radius:10px">尚未上傳任何佐證資料。</div>';return;}
+  con.innerHTML=Object.entries(allFiles).filter(([,items])=>items.length>0).map(([cat,items])=>`
+    <div class="card" style="margin-bottom:12px">
+      <div class="card-hd"><div style="display:flex;align-items:center;gap:8px"><div style="width:10px;height:10px;border-radius:50%;background:${CAT_COLORS[cat]}"></div><div class="card-ttl">${CAT_LABELS[cat]} 佐證單據</div></div><span class="tag" style="background:${CAT_COLORS[cat]}22;color:${CAT_COLORS[cat]};border-color:${CAT_COLORS[cat]}">${items.length} 份</span></div>
+      <div class="tbl-wrap"><table><colgroup><col style="width:7%"><col style="width:28%"><col style="width:30%"><col style="width:12%"><col style="width:10%"><col style="width:13%"></colgroup>
+        <thead><tr><th>格式</th><th>檔案名稱</th><th>關聯記錄</th><th>日期</th><th>大小</th><th>操作</th></tr></thead>
+        <tbody>${items.map(({f,rec,ri,fi})=>`<tr>
+          <td><div style="width:30px;height:20px;background:${CAT_COLORS[cat]};border-radius:3px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:9px;font-weight:700">${f.ext}</div></td>
+          <td title="${f.name}" style="overflow:hidden;text-overflow:ellipsis">${f.name}</td>
+          <td style="color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis">${rec.name||rec.typeName||rec.type||rec.cat||'—'}　${rec.date||''}</td>
+          <td>${rec.date||'—'}</td><td style="color:var(--hint)">${f.size}KB</td>
+          <td><div style="display:flex;gap:4px">
+            <button class="ev-chip-btn" onclick="openFileModalByRec('${cat}',${ri},${fi})" ${!f.dataURL?'disabled':''}>👁</button>
+            <button class="ev-chip-btn" onclick="if('${f.dataURL}'&&'${f.dataURL}'!=='undefined')downloadFile('${f.dataURL}','${f.name}')" ${!f.dataURL?'disabled':''}>⬇</button>
+          </div></td>
+        </tr>`).join('')}</tbody>
+      </table></div>
+    </div>`).join('');
+}
+function renderChecklist(){
+  const grps={};CHECKS.forEach(c=>{if(!grps[c.g])grps[c.g]=[];grps[c.g].push(c);});
+  document.getElementById('CL-con').innerHTML=Object.entries(grps).map(([g,items])=>`<div style="margin-bottom:13px"><div class="sec-hd">${g}</div>${items.map(it=>`<div class="chk-row" onclick="toggleChk('${it.id}')"><div class="chk-box ${chkState[it.id]?'on':''}" id="CB-${it.id}">${chkState[it.id]?'<span class="chk-mark">✓</span>':''}</div><div class="chk-txt ${chkState[it.id]?'done':''}" id="CT-${it.id}">${it.text}</div><div class="chk-star">${it.star}</div></div>`).join('')}</div>`).join('');
+  updateClProg();
+}
+function toggleChk(id){
+  chkState[id]=!chkState[id];
+  const b=document.getElementById('CB-'+id),t=document.getElementById('CT-'+id);
+  if(b){b.className='chk-box'+(chkState[id]?' on':'');b.innerHTML=chkState[id]?'<span class="chk-mark">✓</span>':'';}
+  if(t)t.className='chk-txt'+(chkState[id]?' done':'');
+  updateClProg();updateDash();
+}
+function updateClProg(){
+  const c=Object.values(chkState).filter(Boolean).length;
+  document.getElementById('CL-pct').textContent=`${c} / ${CHECKS.length}`;
+  document.getElementById('CL-bar').style.width=(c/CHECKS.length*100).toFixed(0)+'%';
+}
+
+// ══ Settings ══
+function renderSetAll(){renderEngPanels();renderMatSet();renderVtypeSet();}
+
+function renderEngPanels(){
+  renderEngGroup('ENG-fuel','fuel','kgCO₂e / L');
+  renderEngGroup('ENG-elec','elec','kgCO₂e / kWh');
+  renderEngGroup('ENG-water','water','kgCO₂e / m³');
+  renderEngGroup('ENG-refrig','refrig','kgCO₂e / kg');
+}
+function renderEngGroup(containerId,group,unitLabel){
+  const el=document.getElementById(containerId);if(!el)return;
+  el.innerHTML=engCoeffDB[group].map((e,i)=>`
+    <div class="eng-row">
+      <div class="eng-icon" style="background:${group==='fuel'?'#2a1c05':group==='elec'?'#1a3a5c':group==='water'?'#0a2b20':'#1a1840'}">${e.icon||'◎'}</div>
+      <div class="eng-info">
+        <div class="eng-name">${e.name}</div>
+        <div class="eng-src">來源：${e.src}${e.year&&e.year!=='固定'?`　<span style="color:var(--acc-t)">${e.year}</span>`:''}</div>
+      </div>
+      <div class="eng-right">
+        <span class="${e.isLive?'live-tag':'manual-tag'}">${e.isLive?'🟢 API即時':'內建備用'}</span>
+        <input class="eng-inp" type="number" value="${e.coeff}" step="${group==='refrig'?10:0.001}" min="0"
+          onchange="engCoeffDB['${group}'][${i}].coeff=parseFloat(this.value)||0;engCoeffDB['${group}'][${i}].isLive=false;buildEngSel();syncElecCoeffToLC()">
+        <span class="eng-unit">${unitLabel}</span>
+      </div>
+    </div>`).join('');
+}
+
+function renderMatSet(){
+  document.getElementById('ms-total').textContent=matDB.length;
+  document.getElementById('ms-env').textContent=matDB.filter(m=>m.src==='環境部').length;
+  document.getElementById('ms-other').textContent=matDB.filter(m=>m.src!=='環境部').length;
+  document.getElementById('MAT-tb').innerHTML=matDB.map((m,i)=>`<tr>
+    <td><input class="inline-edit" value="${m.name}" onchange="matDB[${i}].name=this.value;buildMatSel();renderMatSet()" style="font-weight:500"></td>
+    <td><select onchange="matDB[${i}].unit=this.value;buildMatSel()" style="border:1px solid var(--bdr2);border-radius:5px;background:#141820;font-size:12px;color:var(--txt);padding:4px 5px;width:100%">
+      ${UNITS.map(u=>`<option ${m.unit===u?'selected':''}>${u}</option>`).join('')}
+    </select></td>
+    <td><input type="number" class="coeff-edit" value="${m.coeff}" step="0.0001" min="0" onchange="matDB[${i}].coeff=parseFloat(this.value)||0;buildMatSel()"></td>
+    <td><input class="inline-edit" value="${m.src}" onchange="matDB[${i}].src=this.value;renderMatSet()" style="color:var(--muted);font-size:12px"></td>
+    <td><select onchange="matDB[${i}].grade=parseInt(this.value)" style="border:1px solid var(--bdr2);border-radius:5px;background:#141820;font-size:12px;padding:4px 5px;width:100%;color:var(--txt)">
+      <option value="1" ${m.grade===1?'selected':''}>一級</option><option value="2" ${m.grade===2?'selected':''}>二級</option><option value="3" ${m.grade===3?'selected':''}>三級</option>
+    </select></td>
+    <td><div style="display:flex;gap:5px">
+      <button class="btn btn-sm" onclick="matDB.push({...matDB[${i}],id:'d'+Date.now(),name:matDB[${i}].name+' (副本)'});renderMatSet();buildMatSel()">複製</button>
+      <button class="btn btn-sm btn-d" onclick="if(confirm('確定刪除？')){matDB.splice(${i},1);renderMatSet();buildMatSel()}">刪除</button>
+    </div></td>
+  </tr>`).join('');
+}
+
+function renderVtypeSet(){
+  document.getElementById('vs-total').textContent=vtypeDB.length;
+  document.getElementById('vs-cargo').textContent=vtypeDB.filter(v=>!v.isPersonnel).length;
+  document.getElementById('vs-person').textContent=vtypeDB.filter(v=>v.isPersonnel).length;
+  document.getElementById('VTYPE-tb').innerHTML=vtypeDB.map((v,i)=>`<tr>
+    <td><input class="inline-edit" value="${v.name}" onchange="vtypeDB[${i}].name=this.value;buildVtypeSel()" style="font-weight:500"></td>
+    <td><select onchange="vtypeDB[${i}].isPersonnel=this.value==='true';vtypeDB[${i}].unit=this.value==='true'?'kgCO₂e/km':'kgCO₂e/ton-km';renderVtypeSet();buildVtypeSel()"
+      style="border:1px solid var(--bdr2);border-radius:5px;background:#141820;font-size:12px;color:var(--txt);padding:5px 6px;width:100%">
+      <option value="false" ${!v.isPersonnel?'selected':''}>🚚 貨運</option>
+      <option value="true" ${v.isPersonnel?'selected':''}>🚗 人員</option>
+    </select></td>
+    <td><input type="number" class="coeff-edit" value="${v.coeff}" step="0.001" min="0" onchange="vtypeDB[${i}].coeff=parseFloat(this.value)||0;buildVtypeSel()"></td>
+    <td style="font-size:11px;color:var(--muted)">${v.unit}</td>
+    <td><div style="display:flex;gap:5px">
+      <button class="btn btn-sm" onclick="vtypeDB.push({...vtypeDB[${i}],id:'v'+Date.now(),name:vtypeDB[${i}].name+' (副本)'});renderVtypeSet();buildVtypeSel()">複製</button>
+      <button class="btn btn-sm btn-d" onclick="if(confirm('確定刪除？')){vtypeDB.splice(${i},1);renderVtypeSet();buildVtypeSel()}">刪除</button>
+    </div></td>
+  </tr>`).join('');
+}
+
+// API Key 功能已移除
+
+// ══ Modals ══
+function openModal(html){document.getElementById('APP').style.position='relative';document.getElementById('MODAL').innerHTML=`<div class="modal-bd" onclick="if(event.target===this)closeModal()"><div class="modal-box">${html}</div></div>`;}
+function closeModal(){document.getElementById('MODAL').innerHTML='';document.getElementById('APP').style.position='';}
+function openMatModal(){
+  openModal(`<div style="width:400px">
+    <div style="font-size:15px;font-weight:500;color:var(--txt);margin-bottom:14px">新增材料類別</div>
+    <div class="fg"><label>材料名稱</label><input type="text" id="NM-n" placeholder="例：玻璃帷幕、防水材料"></div>
+    <div class="g2"><div class="fg"><label>單位</label><select id="NM-u">${UNITS.map(u=>`<option>${u}</option>`).join('')}</select></div><div class="fg"><label>數據等級</label><select id="NM-g"><option value="1">一級（EPD）</option><option value="2" selected>二級（環境部）</option><option value="3">三級（國際庫）</option></select></div></div>
+    <div class="fg"><label>排放係數 (kgCO₂e/單位)</label><input type="number" id="NM-c" placeholder="0.0000" step="0.0001" min="0"></div>
+    <div class="fg"><label>資料來源</label><select id="NM-s"><option>環境部</option><option>供應商 EPD</option><option>ecoinvent</option><option>自行估算</option><option>其他</option></select></div>
+    <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:14px"><button class="btn" onclick="closeModal()">取消</button><button class="btn btn-p" onclick="confirmMat()">新增材料</button></div>
+  </div>`);
+}
+function confirmMat(){
+  const name=document.getElementById('NM-n').value.trim(),unit=document.getElementById('NM-u').value,coeff=parseFloat(document.getElementById('NM-c').value),src=document.getElementById('NM-s').value,grade=parseInt(document.getElementById('NM-g').value);
+  if(!name||isNaN(coeff)||coeff<0){alert('請填寫材料名稱與有效係數');return;}
+  matDB.push({id:'c'+Date.now(),name,unit,coeff,src,grade});closeModal();renderMatSet();buildMatSel();
+}
+function openVtypeModal(){
+  openModal(`<div style="width:420px">
+    <div style="font-size:15px;font-weight:500;color:var(--txt);margin-bottom:14px">新增車輛類型</div>
+    <div class="fg"><label>車輛名稱</label><input type="text" id="NV-n" placeholder="例：電動貨車、廂型車"></div>
+    <div class="fg"><label>用途類型</label><select id="NV-p"><option value="false">🚚 貨運（kgCO₂e/ton-km）</option><option value="true">🚗 人員/通勤（kgCO₂e/km）</option></select></div>
+    <div class="fg"><label>排放係數</label><input type="number" id="NV-c" placeholder="0.000" step="0.001" min="0"></div>
+    <div style="background:#141820;border:1px solid var(--bdr);border-radius:7px;padding:10px 12px;margin-bottom:14px;font-size:12px;color:var(--muted);line-height:1.7">貨運：重型10t=0.062、中型5t=0.080、小貨車=0.150<br>人員：轎車=0.210、電動車=0.065、機車=0.110、捷運=0.041</div>
+    <div style="display:flex;justify-content:flex-end;gap:8px"><button class="btn" onclick="closeModal()">取消</button><button class="btn btn-p" onclick="confirmVtype()">新增車輛類型</button></div>
+  </div>`);
+}
+function confirmVtype(){
+  const name=document.getElementById('NV-n').value.trim(),isPerson=document.getElementById('NV-p').value==='true',coeff=parseFloat(document.getElementById('NV-c').value);
+  if(!name||isNaN(coeff)||coeff<0){alert('請填寫名稱與有效係數');return;}
+  vtypeDB.push({id:'v'+Date.now(),name,isPersonnel:isPerson,coeff,unit:isPerson?'kgCO₂e/km':'kgCO₂e/ton-km'});closeModal();renderVtypeSet();buildVtypeSel();
+}
+
+// ══ Dashboard ══
+function updateDash(){
+  const matT=matData.reduce((s,r)=>s+r.emission,0)/1000,engT=engData.reduce((s,r)=>s+r.emission,0)/1000,wstT=wstData.reduce((s,r)=>s+r.emission,0)/1000,trpT=trpData.reduce((s,r)=>s+r.emission,0)/1000,perT=perData.reduce((s,r)=>s+r.emission,0)/1000;
+  const p1ov=parseFloat(document.getElementById('LC-p1').value)||0,p2ov=parseFloat(document.getElementById('LC-p2').value)||0,p3=parseFloat(document.getElementById('LC-p3').value)||0,p4=parseFloat(document.getElementById('LC-p4').value)||0,p5=parseFloat(document.getElementById('LC-p5').value)||0;
+  const p1=p1ov||matT,p2=p2ov||(engT+wstT+trpT+perT),total=p1+p2+p3+p4+p5;
+  const area=parseFloat(document.getElementById('LC-area').value)||0;
+  document.getElementById('D-func').textContent=(total>0&&area>0)?((total*1000)/area/60).toFixed(3):'—';
+  document.getElementById('D-total').textContent=total>0?total.toFixed(2):'—';
+  const chk=Object.values(chkState).filter(Boolean).length;
+  document.getElementById('CDOC').textContent=chk+'/33';document.getElementById('CDOC').className='tag '+(chk===CHECKS.length?'tg':'ta');
+  const ic=matData.length+engData.length+wstData.length+trpData.length+perData.length;
+  document.getElementById('D-prog').textContent=Math.min(Math.round(chk/CHECKS.length*50+Math.min(ic*2,30)+(total>0?20:0)),100)+'%';
+  const tf=[...matData,...engData,...wstData,...trpData,...perData].reduce((s,r)=>s+(r.files?.length||0),0);
+  document.getElementById('D-files').textContent=tf;
+  const phases=[p1,p2,p3,p4,p5],colors=['#378ADD','#1D9E75','#BA7517','#7F77DD','#D85A30'],mx=Math.max(...phases,0.001);
+  [1,2,3,4,5].forEach((n,i)=>{document.getElementById('PV'+n).textContent=phases[i]>0?phases[i].toFixed(2)+' t':'—';document.getElementById('PP'+n).textContent=total>0&&phases[i]>0?(phases[i]/total*100).toFixed(1)+'%':'—';document.getElementById('PB'+n).style.width=(phases[i]/mx*100).toFixed(0)+'%';});
+  if(chartInst)chartInst.destroy();
+  const ctx=document.getElementById('phChart');
+  if(ctx)chartInst=new Chart(ctx,{type:'bar',data:{labels:['原料取得','營造施工','建築使用','修繕更新','拆除廢棄'],datasets:[{data:phases,backgroundColor:colors,borderRadius:5,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}},scales:{y:{beginAtZero:true,grid:{color:'rgba(255,255,255,0.06)'},ticks:{font:{size:11},color:'#9ba1b4'}},x:{grid:{display:false},ticks:{font:{size:11},color:'#9ba1b4'}}}}});
+  const recent=[...matData.slice(-1).map(r=>`<div style="padding:5px 0;border-bottom:1px solid var(--bdr)">材料：${r.name}　${r.emission.toFixed(1)} kgCO₂e　${r.date}</div>`),
+    ...trpData.slice(-1).map(r=>`<div style="padding:5px 0;border-bottom:1px solid var(--bdr)">運輸：${r.typeName} ${r.plate}　${r.emission.toFixed(1)} kgCO₂e</div>`),
+    ...perData.slice(-1).map(r=>`<div style="padding:5px 0">人員：${r.cat} ${r.n}人　${r.emission.toFixed(1)} kgCO₂e</div>`)];
+  document.getElementById('RECENT').innerHTML=recent.length?recent.join(''):'尚無記錄';
+}
+
+// ══ Init ══
+var SKEY='sacurn_v3';  // 必須在 loadFromStorage 前宣告
+['mat-dr','eng-dr','wst-dr','trp-dr','per-dr'].forEach(id=>makeDR(id));
+buildMatSel();buildEngSel();buildVtypeSel();syncElecCoeffToLC();
+// 先從 localStorage 還原，成功就不跑空 updateDash
+if(!loadFromStorage()){updateDash();}
+
+// ══ localStorage ══
+function saveToStorage(){
+  try{
+    const d={
+      v:3,ts:Date.now(),
+      matData:matData,engData:engData,wstData:wstData,trpData:trpData,perData:perData,
+      matDB:matDB,engCoeffDB:engCoeffDB,vtypeDB:vtypeDB,chkState:chkState,
+      lc:{
+        area:document.getElementById('LC-area').value||'',
+        life:document.getElementById('LC-life').value||'',
+        p1:document.getElementById('LC-p1').value||'',
+        p2:document.getElementById('LC-p2').value||'',
+        p3:document.getElementById('LC-p3').value||'',
+        p4:document.getElementById('LC-p4').value||'',
+        p5:document.getElementById('LC-p5').value||''
+      }
+    };
+    localStorage.setItem(SKEY,JSON.stringify(d));
+    const n=matData.length+engData.length+wstData.length+trpData.length+perData.length;
+    const el=document.getElementById('storage-status');
+    if(el)el.textContent='💾 已儲存 '+new Date().toLocaleTimeString('zh-TW')+' ｜ 共'+n+'筆記錄';
+  }catch(e){
+    const el=document.getElementById('storage-status');
+    if(el)el.textContent='⚠ 儲存失敗（空間不足），請用 JSON 備份';
+    console.warn('save fail',e);
+  }
+}
+function loadFromStorage(){
+  try{
+    const raw=localStorage.getItem(SKEY);
+    if(!raw)return false;
+    const s=JSON.parse(raw);
+    if(!s||s.v!==3)return false;
+    function load(arr,src){if(src&&src.length){arr.splice(0);src.forEach(function(x){arr.push(x);});}}
+    load(matData,s.matData);load(engData,s.engData);load(wstData,s.wstData);
+    load(trpData,s.trpData);load(perData,s.perData);
+    if(s.matDB&&s.matDB.length){matDB.splice(0);s.matDB.forEach(function(x){matDB.push(x);});}
+    if(s.vtypeDB&&s.vtypeDB.length){vtypeDB.splice(0);s.vtypeDB.forEach(function(x){vtypeDB.push(x);});}
+    if(s.engCoeffDB){
+      Object.keys(s.engCoeffDB).forEach(function(g){
+        if(engCoeffDB[g]){engCoeffDB[g].splice(0);s.engCoeffDB[g].forEach(function(x){engCoeffDB[g].push(x);});}
+      });
+    }
+    if(s.chkState)Object.assign(chkState,s.chkState);
+    if(s.lc){
+      ['area','life','p1','p2','p3','p4','p5'].forEach(function(k){
+        const el=document.getElementById('LC-'+k);
+        if(el&&s.lc[k]!==undefined&&s.lc[k]!=='')el.value=s.lc[k];
+      });
+    }
+    renderMT();renderET();renderWT();renderTT();renderPT();
+    buildMatSel();buildEngSel();buildVtypeSel();syncElecCoeffToLC();
+    updateDash();
+    const el=document.getElementById('storage-status');
+    if(el){
+      const n=matData.length+engData.length+wstData.length+trpData.length+perData.length;
+      el.textContent='💾 已還原 '+new Date(s.ts).toLocaleDateString('zh-TW')+' 的備份 ｜ 共'+n+'筆記錄';
+    }
+    return true;
+  }catch(e){console.warn('load fail',e);return false;}
+}
+function clearAllData(){
+  if(!confirm('確定清除所有資料？此操作無法復原。'))return;
+  localStorage.removeItem(SKEY);
+  [matData,engData,wstData,trpData,perData].forEach(function(a){a.splice(0);});
+  CHECKS.forEach(function(c){chkState[c.id]=false;});
+  ['LC-area','LC-life','LC-p1','LC-p2','LC-p3','LC-p4','LC-p5'].forEach(function(id){
+    var el=document.getElementById(id);if(el)el.value='';
+  });
+  renderMT();renderET();renderWT();renderTT();renderPT();
+  updateDash();
+  var el=document.getElementById('storage-status');
+  if(el)el.textContent='🗑 所有資料已清除';
+}
+// 自動儲存：updateDash 後觸發
+var _origUD=updateDash;
+updateDash=function(){_origUD();saveToStorage();};
+
+// ══ JSON 備份 / 匯入 ══
+function exportJSON(){
+  var d={v:3,ts:Date.now(),matData:matData,engData:engData,wstData:wstData,trpData:trpData,perData:perData,matDB:matDB,engCoeffDB:engCoeffDB,vtypeDB:vtypeDB,chkState:chkState};
+  var blob=new Blob([JSON.stringify(d,null,2)],{type:'application/json'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='Sacurn_備份_'+new Date().toISOString().split('T')[0]+'.json';
+  a.click();URL.revokeObjectURL(a.href);
+}
+function importJSON(inp){
+  var file=inp.files[0];if(!file)return;
+  var reader=new FileReader();
+  reader.onload=function(e){
+    try{
+      var s=JSON.parse(e.target.result);
+      if(!s||s.v!==3){alert('格式錯誤：此 JSON 不是 Sacurn 備份檔。');return;}
+      if(!confirm('匯入將覆蓋現有資料，確定繼續？'))return;
+      function load(arr,src){if(src&&src.length){arr.splice(0);src.forEach(function(x){arr.push(x);});}}
+      load(matData,s.matData);load(engData,s.engData);load(wstData,s.wstData);
+      load(trpData,s.trpData);load(perData,s.perData);
+      if(s.matDB&&s.matDB.length){matDB.splice(0);s.matDB.forEach(function(x){matDB.push(x);});}
+      if(s.vtypeDB&&s.vtypeDB.length){vtypeDB.splice(0);s.vtypeDB.forEach(function(x){vtypeDB.push(x);});}
+      if(s.engCoeffDB){
+        Object.keys(s.engCoeffDB).forEach(function(g){
+          if(engCoeffDB[g]){engCoeffDB[g].splice(0);s.engCoeffDB[g].forEach(function(x){engCoeffDB[g].push(x);});}
+        });
+      }
+      if(s.chkState)Object.assign(chkState,s.chkState);
+      renderMT();renderET();renderWT();renderTT();renderPT();
+      buildMatSel();buildEngSel();buildVtypeSel();syncElecCoeffToLC();
+      updateDash();
+      var n=matData.length+engData.length+wstData.length+trpData.length+perData.length;
+      alert('✅ 匯入成功！共還原 '+n+' 筆記錄。');
+    }catch(err){alert('匯入失敗：'+err.message);}
+  };
+  reader.readAsText(file);inp.value='';
+}
+
+// ══ Excel ══
+function exportExcel(){
+  // 用 HTML Table 格式輸出 .xls，Excel/LibreOffice 100% 可開，中文不亂碼
+  var GN={1:'一級',2:'二級',3:'三級'};
+  var now=new Date().toLocaleDateString('zh-TW');
+  var matT=matData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var engT=engData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var wstT=wstData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var trpT=trpData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var perT=perData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var conT=matT+engT+wstT+trpT+perT;
+  var p3=parseFloat(document.getElementById('LC-p3').value)||0;
+  var p4=parseFloat(document.getElementById('LC-p4').value)||0;
+  var p5=parseFloat(document.getElementById('LC-p5').value)||0;
+  var lcT=conT+p3+p4+p5;
+  var area=parseFloat(document.getElementById('LC-area').value)||0;
+  var fu=(lcT>0&&area>0)?(lcT*1000/area/60).toFixed(3):'';
+
+  var H='background:#1A3A5C;color:#fff;font-weight:bold;padding:5px 8px;border:1px solid #999;';
+  var C='padding:4px 8px;border:1px solid #ccc;';
+  var N='padding:4px 8px;border:1px solid #ccc;text-align:right;';
+
+  function esc(v){
+    if(v==null||v===undefined)return '';
+    return String(v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+  function th(v){return '<th style="'+H+'">'+esc(v)+'</th>';}
+  function td(v){return '<td style="'+C+'">'+esc(v)+'</td>';}
+  function tn(v){return '<td style="'+N+'">'+esc(v)+'</td>';}
+  function sheet(name,tableHtml){
+    return '<h3 style="background:#1A3A5C;color:#fff;padding:6px 10px;margin:20px 0 0 0;">'+esc(name)+'</h3>'
+          +'<table border="1" cellspacing="0" style="border-collapse:collapse;font-size:12px;font-family:sans-serif;">'+tableHtml+'</table>';
+  }
+
+  var s='';
+
+  // 摘要
+  s+=sheet('盤查摘要',
+    '<tr>'+th('項目')+th('數值')+th('單位')+'</tr>'
+    +'<tr>'+td('Sacurn 永續一號 碳足跡盤查報告')+td('')+td('')+'</tr>'
+    +'<tr>'+td('產出日期')+td(now)+td('')+'</tr>'
+    +'<tr>'+td('功能單位')+tn(fu)+td('kgCO₂e/m²/年')+'</tr>'
+    +'<tr>'+td('全生命週期總排放')+tn(lcT.toFixed(3))+td('tCO₂e')+'</tr>'
+    +'<tr>'+td('施工階段合計')+tn(conT.toFixed(3))+td('tCO₂e')+'</tr>'
+    +'<tr>'+td('　工程材料')+tn(matT.toFixed(3))+td('tCO₂e')+'</tr>'
+    +'<tr>'+td('　能源消耗')+tn(engT.toFixed(3))+td('tCO₂e')+'</tr>'
+    +'<tr>'+td('　廢棄物')+tn(wstT.toFixed(3))+td('tCO₂e')+'</tr>'
+    +'<tr>'+td('　運輸車輛')+tn(trpT.toFixed(3))+td('tCO₂e')+'</tr>'
+    +'<tr>'+td('　人員現場')+tn(perT.toFixed(3))+td('tCO₂e')+'</tr>'
+    +'<tr>'+td('建築使用60年（階段3）')+tn(p3.toFixed(3))+td('tCO₂e')+'</tr>'
+    +'<tr>'+td('修繕更新（階段4）')+tn(p4.toFixed(3))+td('tCO₂e')+'</tr>'
+    +'<tr>'+td('拆除廢棄（階段5）')+tn(p5.toFixed(3))+td('tCO₂e')+'</tr>'
+    +'<tr>'+td('室內樓地板面積')+tn(area||0)+td('m²')+'</tr>'
+  );
+
+  // 材料
+  var matRows='<tr>'+th('材料名稱')+th('數量')+th('單位')+th('係數(kgCO₂e/單位)')+th('排放量(kgCO₂e)')+th('供應商')+th('日期')+th('等級')+'</tr>';
+  matData.forEach(function(r){matRows+='<tr>'+td(r.name)+tn(r.qty)+td(r.unit)+tn(r.coeff)+tn(r.emission.toFixed(2))+td(r.sup||'')+td(r.date)+td(GN[r.grade]||'')+'</tr>';});
+  matRows+='<tr>'+th('合計')+td('')+td('')+td('')+th((matT*1000).toFixed(2))+td('')+td('')+td('')+'</tr>';
+  s+=sheet('工程材料',matRows);
+
+  // 能源
+  var engRows='<tr>'+th('能源類型')+th('消耗量')+th('單位')+th('係數')+th('排放量(kgCO₂e)')+th('日期')+th('等級')+'</tr>';
+  engData.forEach(function(r){engRows+='<tr>'+td(r.name)+tn(r.qty)+td(r.unit)+tn(r.coeff)+tn(r.emission.toFixed(2))+td(r.date)+td(GN[r.grade]||'')+'</tr>';});
+  engRows+='<tr>'+th('合計')+td('')+td('')+td('')+th((engT*1000).toFixed(2))+td('')+td('')+'</tr>';
+  s+=sheet('能源消耗',engRows);
+
+  // 廢棄物
+  var wstRows='<tr>'+th('廢棄物類型')+th('量(ton)')+th('處理方式')+th('排放量(kgCO₂e)')+th('供應商')+th('日期')+th('等級')+'</tr>';
+  wstData.forEach(function(r){wstRows+='<tr>'+td(r.type)+tn(r.qty)+td(r.method)+tn(r.emission.toFixed(2))+td(r.supp||'')+td(r.date)+td(GN[r.grade]||'')+'</tr>';});
+  s+=sheet('廢棄物',wstRows);
+
+  // 運輸
+  var trpRows='<tr>'+th('用途')+th('車牌')+th('車型')+th('出發地')+th('目的地')+th('距離(km)')+th('排放量(kgCO₂e)')+th('日期')+th('等級')+'</tr>';
+  trpData.forEach(function(r){trpRows+='<tr>'+td(r.typeName)+td(r.plate)+td(r.vtypeName)+td(r.from)+td(r.to)+tn(r.dist)+tn(r.emission.toFixed(2))+td(r.date)+td(GN[r.grade]||'')+'</tr>';});
+  s+=sheet('運輸車輛',trpRows);
+
+  // 人員
+  var perRows='<tr>'+th('人員類別')+th('人數')+th('工時(hr)')+th('現場碳排(kgCO₂e)')+th('日期')+th('等級')+'</tr>';
+  perData.forEach(function(r){perRows+='<tr>'+td(r.cat)+tn(r.n)+tn(r.h)+tn(r.site.toFixed(2))+td(r.date)+td(GN[r.grade]||'')+'</tr>';});
+  s+=sheet('人員現場',perRows);
+
+  // 係數清冊
+  var coefRows='<tr>'+th('名稱')+th('排放係數')+th('單位')+th('資料來源')+th('等級')+'</tr>';
+  matDB.forEach(function(m){coefRows+='<tr>'+td(m.name)+tn(m.coeff)+td('kgCO₂e/'+m.unit)+td(m.src)+td(GN[m.grade]||'二級')+'</tr>';});
+  Object.keys(engCoeffDB).forEach(function(g){
+    engCoeffDB[g].forEach(function(e){
+      coefRows+='<tr>'+td(e.name)+tn(e.coeff)+td('kgCO₂e/'+e.unit)+td(e.src+(e.year?'（'+e.year+'）':''))+td('二級')+'</tr>';
+    });
+  });
+  s+=sheet('排放係數清冊(C-1)',coefRows);
+
+  // 組合完整 HTML
+  var fullHtml='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">'
+    +'<head><meta charset="UTF-8">'
+    +'<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets>'
+    +'<x:ExcelWorksheet><x:Name>盤查報告</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet>'
+    +'</x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->'
+    +'</head><body>'+s+'</body></html>';
+
+  var blob=new Blob([fullHtml],{type:'application/vnd.ms-excel;charset=UTF-8'});
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='Sacurn_碳足跡盤查_'+new Date().toISOString().split('T')[0]+'.xls';
+  a.click();
+  setTimeout(function(){URL.revokeObjectURL(a.href);},1000);
+}
+
+// ══ PDF ══
+function exportPDF(){
+  var GN={1:'一級',2:'二級',3:'三級'};
+  var now=new Date().toLocaleDateString('zh-TW');
+  var matT=matData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var engT=engData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var wstT=wstData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var trpT=trpData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var perT=perData.reduce(function(s,r){return s+r.emission;},0)/1000;
+  var conT=matT+engT+wstT+trpT+perT;
+  var p3=parseFloat(document.getElementById('LC-p3').value)||0;
+  var p4=parseFloat(document.getElementById('LC-p4').value)||0;
+  var p5=parseFloat(document.getElementById('LC-p5').value)||0;
+  var lcT=conT+p3+p4+p5;
+  var area=parseFloat(document.getElementById('LC-area').value)||0;
+  var fu=(lcT>0&&area>0)?(lcT*1000/area/60).toFixed(3):'—';
+  var totalFiles=[matData,engData,wstData,trpData,perData].reduce(function(s,a){return s+a.reduce(function(s2,r){return s2+(r.files?r.files.length:0);},0);},0);
+
+  function esc(v){return String(v==null?'—':v).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function tbl(data,cols,heads){
+    var h='<tr>'+heads.map(function(h){return '<th>'+h+'</th>';}).join('')+'</tr>';
+    var body=data.map(function(r){
+      return '<tr>'+cols.map(function(c){return '<td>'+esc(r[c])+'</td>';}).join('')+'</tr>';
+    }).join('');
+    if(!body)body='<tr><td colspan="'+cols.length+'" style="text-align:center;color:#999">尚無記錄</td></tr>';
+    return '<table>'+h+body+'</table>';
+  }
+
+  var w=window.open('','_blank','width=960,height=700');
+  if(!w){alert('請允許彈出視窗後再試');return;}
+  var css='*{box-sizing:border-box;margin:0;padding:0}'
+    +'body{font-family:"Microsoft JhengHei",sans-serif;font-size:12px;color:#222;padding:24px}'
+    +'h1{font-size:20px;color:#1a3a5c;margin-bottom:4px}'
+    +'.sub{font-size:11px;color:#666;margin-bottom:18px}'
+    +'h2{font-size:14px;font-weight:600;color:#1a3a5c;border-bottom:2px solid #378ADD;padding-bottom:4px;margin:16px 0 8px}'
+    +'.kpi{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:14px}'
+    +'.kbox{background:#f0f5ff;border:1px solid #c5d8f5;border-radius:6px;padding:10px}'
+    +'.kv{font-size:20px;font-weight:700;color:#1a3a5c}.kl{font-size:10px;color:#666;margin-top:2px}'
+    +'table{width:100%;border-collapse:collapse;margin-bottom:10px;font-size:11px}'
+    +'th{background:#1a3a5c;color:#fff;padding:5px 7px;text-align:left}'
+    +'td{padding:4px 7px;border-bottom:1px solid #dde}'
+    +'tr:nth-child(even) td{background:#f5f7ff}'
+    +'.footer{margin-top:24px;padding-top:10px;border-top:1px solid #ccc;font-size:10px;color:#999}'
+    +'.np{margin-bottom:14px}@media print{.np{display:none}}';
+
+  var body='<div class="np">'
+    +'<button onclick="window.print()" style="padding:7px 16px;background:#1a3a5c;color:#fff;border:none;border-radius:5px;cursor:pointer;font-size:13px">🖨 列印 / 另存 PDF</button>'
+    +'<span style="margin-left:12px;font-size:12px;color:#666">列印 → 另存為 PDF</span></div>'
+    +'<h1>建築物碳足跡盤查報告</h1>'
+    +'<div class="sub">Sacurn 永續一號｜CFP-PCR 建築物 V3.0、ISO 14067｜H 類住宿 RC/鋼骨 60年｜'+now+'</div>'
+    +'<h2>一、盤查摘要</h2>'
+    +'<div class="kpi">'
+    +'<div class="kbox"><div class="kv">'+fu+'</div><div class="kl">功能單位（kgCO₂e/m²/年）</div></div>'
+    +'<div class="kbox"><div class="kv">'+lcT.toFixed(3)+'</div><div class="kl">全生命週期（tCO₂e）</div></div>'
+    +'<div class="kbox"><div class="kv">'+totalFiles+'</div><div class="kl">已上傳佐證份數</div></div>'
+    +'<div class="kbox"><div class="kv">'+(area>0?area+' m²':'—')+'</div><div class="kl">室內樓地板面積</div></div>'
+    +'</div>'
+    +'<h2>二、生命週期階段彙總</h2>'
+    +'<table><tr><th>階段</th><th>tCO₂e</th><th>佔比</th></tr>'
+    +[['階段1 原料取得',matT],['階段2 施工合計',conT-matT],['階段3 建築使用60年',p3],['階段4 修繕更新',p4],['階段5 拆除廢棄',p5]].map(function(x){
+      return '<tr><td>'+x[0]+'</td><td>'+x[1].toFixed(3)+'</td><td>'+(lcT>0?(x[1]/lcT*100).toFixed(1)+'%':'—')+'</td></tr>';
+    }).join('')
+    +'<tr style="font-weight:600"><td>合計</td><td>'+lcT.toFixed(3)+'</td><td>100%</td></tr></table>'
+    +'<h2>三、工程材料（'+matData.length+' 筆）</h2>'
+    +tbl(matData,['name','qty','unit','coeff','emission','sup','date','grade'],['材料','數量','單位','係數','kgCO₂e','供應商','日期','等級'])
+    +'<h2>四、能源消耗（'+engData.length+' 筆）</h2>'
+    +tbl(engData,['name','qty','unit','coeff','emission','date','grade'],['類型','消耗量','單位','係數','kgCO₂e','日期','等級'])
+    +'<h2>五、廢棄物（'+wstData.length+' 筆）</h2>'
+    +tbl(wstData,['type','qty','method','emission','supp','date','grade'],['類型','ton','處理','kgCO₂e','供應商','日期','等級'])
+    +'<h2>六、運輸車輛（'+trpData.length+' 筆）</h2>'
+    +tbl(trpData,['typeName','plate','vtypeName','from','to','dist','emission','date'],['用途','車牌','車型','出發地','目的地','km','kgCO₂e','日期'])
+    +'<h2>七、人員施工（'+perData.length+' 筆）</h2>'
+    +tbl(perData,['cat','n','h','site','date','grade'],['類別','人數','工時','kgCO₂e','日期','等級'])
+    +'<h2>八、排放係數清冊（C-1）</h2>'
+    +'<table><tr><th>名稱</th><th>係數</th><th>單位</th><th>來源</th><th>等級</th></tr>'
+    +matDB.map(function(m){return '<tr><td>'+m.name+'</td><td>'+m.coeff+'</td><td>kgCO₂e/'+m.unit+'</td><td>'+m.src+'</td><td>'+(GN[m.grade]||'二級')+'</td></tr>';}).join('')
+    +(function(){var r='';Object.keys(engCoeffDB).forEach(function(g){engCoeffDB[g].forEach(function(e){r+='<tr><td>'+e.name+'</td><td>'+e.coeff+'</td><td>kgCO₂e/'+e.unit+'</td><td>'+e.src+(e.year?'（'+e.year+'）':'')+'</td><td>二級</td></tr>';});});return r;})()
+    +'</table>'
+    +'<div class="footer">Sacurn 永續一號碳足跡盤查系統｜CFP-PCR 建築物 V3.0（20-048）、ISO 14067:2018｜'+now+'</div>';
+
+  w.document.write('<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Sacurn 盤查報告</title><style>'+css+'</style></head><body>'+body+'</body></html>');
+  w.document.close();
+}
+
+// ════════════════════════════════════════════════════
+// Google Drive 整合
+// ════════════════════════════════════════════════════
+var GDRIVE_CLIENT_ID = '514290132752-q33u0n35k8792crujp8bgd99g3snqvjk.apps.googleusercontent.com';
+var GDRIVE_SCOPES = 'https://www.googleapis.com/auth/drive.file https://www.googleapis.com/auth/spreadsheets';
+var GDRIVE_FOLDER_NAME = 'Sacurn 佐證資料';
+var SHEET_ID = '1X5P96G36G8DHiwxmD2t9rYdffVBNMvfKnQC7-LtzVm8';
+var gdriveToken = null;
+var gdriveFolderId = null;
+var gdriveConnected = false;
+
+// 連結 Google Drive
+function gdriveConnect(){
+  if(typeof google === 'undefined' || !google.accounts){
+    alert('Google 身份驗證 SDK 尚未載入，請確認網路連線後重新整理頁面。');
+    return;
+  }
+  var client = google.accounts.oauth2.initTokenClient({
+    client_id: GDRIVE_CLIENT_ID,
+    scope: GDRIVE_SCOPES,
+    callback: function(resp){
+      if(resp.error){
+        gdriveSetStatus('連結失敗：'+resp.error, false);
+        return;
+      }
+      gdriveToken = resp.access_token;
+      gdriveConnected = true;
+      localStorage.setItem('sacurn_gdrive_token', gdriveToken);
+      gdriveSetStatus('已連結', true);
+      gdriveEnsureFolder();
+    }
+  });
+  client.requestAccessToken();
+}
+
+// 中斷連結
+function gdriveDisconnect(){
+  if(gdriveToken){
+    google.accounts.oauth2.revoke(gdriveToken, function(){});
+  }
+  gdriveToken = null;
+  gdriveFolderId = null;
+  gdriveConnected = false;
+  localStorage.removeItem('sacurn_gdrive_token');
+  localStorage.removeItem('sacurn_gdrive_folder');
+  gdriveSetStatus('未連結 — 佐證存本機', false);
+}
+
+// 更新狀態顯示
+function gdriveSetStatus(msg, connected){
+  var st = document.getElementById('gdrive-status');
+  var cb = document.getElementById('gdrive-connect-btn');
+  var db = document.getElementById('gdrive-disconnect-btn');
+  if(st) st.textContent = connected ? '✅ 已連結 Google Drive — '+msg : '⚪ '+msg;
+  if(st) st.style.color = connected ? 'var(--grn-t)' : 'var(--hint)';
+  if(cb) cb.style.display = connected ? 'none' : 'inline-flex';
+  if(db) db.style.display = connected ? 'inline-flex' : 'none';
+  // Drive 按鈕永遠顯示（預設顯示）
+}
+
+// ════════════════════════════════════════════════════
+// Google Sheets 自動同步
+// ════════════════════════════════════════════════════
+
+// Sheet 名稱對應
+var SHEET_NAMES = {
+  mat: '工程材料',
+  eng: '能源消耗',
+  wst: '廢棄物',
+  trp: '運輸車輛',
+  per: '人員現場'
+};
+
+// Sheet 欄位標題
+var SHEET_HEADERS = {
+  mat: ['記錄ID','材料名稱','數量','單位','係數(kgCO₂e/單位)','排放量(kgCO₂e)','供應商','日期','數據等級','佐證檔案','建立時間'],
+  eng: ['記錄ID','能源類型','消耗量','單位','係數','排放量(kgCO₂e)','日期','數據等級','建立時間'],
+  wst: ['記錄ID','廢棄物類型','量(ton)','處理方式','排放量(kgCO₂e)','供應商','日期','數據等級','建立時間'],
+  trp: ['記錄ID','用途','車牌','車型','出發地','目的地','距離(km)','排放量(kgCO₂e)','日期','數據等級','建立時間'],
+  per: ['記錄ID','人員類別','人數','工時(hr)','現場碳排(kgCO₂e)','日期','數據等級','建立時間']
+};
+
+// 初始化 Sheet（建立工作表 + 標題列）
+async function sheetsInit(){
+  if(!gdriveToken) return;
+  try{
+    // 取得現有工作表清單
+    var resp = await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'?fields=sheets.properties.title',
+      {headers:{Authorization:'Bearer '+gdriveToken}}
+    );
+    var data = await resp.json();
+    if(!data.sheets){
+      console.warn('Sheets API error:', data);
+      return;
+    }
+    var existingSheets = data.sheets.map(function(s){return s.properties.title;});
+
+    // 對每個類別確保工作表存在
+    for(var cat of Object.keys(SHEET_NAMES)){
+      var sheetName = SHEET_NAMES[cat];
+      if(!existingSheets.includes(sheetName)){
+        // 新增工作表
+        await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+':batchUpdate', {
+          method:'POST',
+          headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+          body: JSON.stringify({requests:[{addSheet:{properties:{title:sheetName}}}]})
+        });
+        // 寫入標題列
+        await sheetsWriteRow(sheetName, SHEET_HEADERS[cat], 1);
+      }
+    }
+    // 確保「盤查摘要」工作表存在
+    if(!existingSheets.includes('盤查摘要')){
+      await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+':batchUpdate', {
+        method:'POST',
+        headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+        body: JSON.stringify({requests:[{addSheet:{properties:{title:'盤查摘要'}}}]})
+      });
+    }
+    console.log('Sheets initialized');
+  }catch(e){
+    console.warn('sheetsInit error:', e);
+  }
+}
+
+// 寫入一行到指定工作表
+async function sheetsWriteRow(sheetName, values, rowNum){
+  var range = encodeURIComponent(sheetName+'!A'+rowNum);
+  var resp = await fetch(
+    'https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+range+'?valueInputOption=RAW',
+    {
+      method:'PUT',
+      headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+      body: JSON.stringify({values:[values]})
+    }
+  );
+  var data = await resp.json();
+  if(data.error) console.warn('sheetsWriteRow error:', data.error);
+}
+
+// 附加一行到工作表末尾
+async function sheetsAppendRow(sheetName, values){
+  if(!gdriveToken){return;}
+  try{
+    var range = encodeURIComponent(sheetName);
+    var resp = await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+range+':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS',
+      {
+        method:'POST',
+        headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+        body: JSON.stringify({values:[values]})
+      }
+    );
+    var data = await resp.json();
+    if(data.error) console.warn('sheetsAppendRow API error:', data.error);
+    return data;
+  }catch(e){
+    console.warn('sheetsAppendRow error:', e);
+  }
+}
+
+
+// 從 Sheets 刪除指定行（用空白行覆蓋）
+async function sheetsDeleteRow(sheetName, rowIndex){
+  if(!gdriveToken || !rowIndex) return;
+  try{
+    // 先取得 sheetId
+    var resp = await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'?fields=sheets.properties',
+      {headers:{Authorization:'Bearer '+gdriveToken}}
+    );
+    var data = await resp.json();
+    var sheet = (data.sheets||[]).find(function(s){return s.properties.title===sheetName;});
+    if(!sheet) return;
+    var sheetId = sheet.properties.sheetId;
+    // 刪除該行
+    await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+':batchUpdate',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+      body:JSON.stringify({requests:[{deleteDimension:{range:{sheetId:sheetId,dimension:'ROWS',startIndex:rowIndex-1,endIndex:rowIndex}}}]})
+    });
+  }catch(e){console.warn('sheetsDeleteRow error:',e);}
+}
+
+// 刪除 Drive 檔案
+async function driveDeleteFile(fileId){
+  if(!gdriveToken || !fileId) return;
+  try{
+    await fetch('https://www.googleapis.com/drive/v3/files/'+fileId,{
+      method:'DELETE',
+      headers:{Authorization:'Bearer '+gdriveToken}
+    });
+  }catch(e){console.warn('driveDeleteFile error:',e);}
+}
+
+// 刪除記錄並同步到 Sheets 和 Drive
+function deleteRec(cat, i){
+  if(!confirm('確定刪除這筆記錄（含佐證檔案）？')) return;
+  var dataMap = {mat:matData,eng:engData,wst:wstData,trp:trpData,per:perData};
+  var renderMap = {mat:renderMT,eng:renderET,wst:renderWT,trp:renderTT,per:renderPT};
+  var arr = dataMap[cat];
+  var rec = arr[i];
+  if(rec){
+    // 刪除 Drive 佐證檔案
+    if(rec.files && rec.files.length && gdriveToken){
+      rec.files.forEach(function(f){
+        if(f.isDrive && f.driveId) driveDeleteFile(f.driveId);
+      });
+    }
+    // 從 Sheets 刪除
+    if(rec._sheetRow && gdriveToken){
+      sheetsDeleteRow(SHEET_NAMES[cat], rec._sheetRow);
+      syncSummaryToSheets();
+    }
+  }
+  arr.splice(i,1);
+  // 更新剩餘記錄的 _sheetRow
+  if(rec && rec._sheetRow){
+    arr.forEach(function(r){
+      if(r._sheetRow && r._sheetRow > rec._sheetRow) r._sheetRow--;
+    });
+  }
+  renderMap[cat]();
+  updateDash();
+}
+
+// 產生唯一記錄 ID
+function makeRecId(){
+  return new Date().toISOString().replace(/[-:.TZ]/g,'').slice(0,15)+Math.random().toString(36).slice(2,6).toUpperCase();
+}
+
+// 格式化佐證檔案清單
+function formatFiles(files){
+  if(!files||!files.length) return '無';
+  return files.map(function(f){
+    if(f.isDrive && f.driveViewLink) return f.name+'（Drive）';
+    return f.name+'（本機）';
+  }).join('、');
+}
+
+// 同步單筆記錄到 Sheets，並記錄行號到 rec._sheetRow
+async function syncToSheets(cat, rec){
+  if(!gdriveToken) return;
+  var GN={1:'一級',2:'二級',3:'三級'};
+  var now = new Date().toLocaleString('zh-TW');
+  var id = makeRecId();
+  var row = [];
+  if(cat==='mat'){
+    row=[id,rec.name,rec.qty,rec.unit,rec.coeff,rec.emission.toFixed(2),rec.sup||'',rec.date,GN[rec.grade]||'',formatFiles(rec.files),now];
+  }else if(cat==='eng'){
+    row=[id,rec.name,rec.qty,rec.unit,rec.coeff,rec.emission.toFixed(2),rec.date,GN[rec.grade]||'',now];
+  }else if(cat==='wst'){
+    row=[id,rec.type,rec.qty,rec.method,rec.emission.toFixed(2),rec.supp||'',rec.date,GN[rec.grade]||'',now];
+  }else if(cat==='trp'){
+    row=[id,rec.typeName,rec.plate,rec.vtypeName,rec.from,rec.to,rec.dist,rec.emission.toFixed(2),rec.date,GN[rec.grade]||'',now];
+  }else if(cat==='per'){
+    row=[id,rec.cat,rec.n,rec.h,rec.site.toFixed(2),rec.date,GN[rec.grade]||'',now];
+  }
+  try{
+    var sheetName = SHEET_NAMES[cat];
+    var range = encodeURIComponent(sheetName);
+    var resp = await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+range+':append?valueInputOption=RAW&insertDataOption=INSERT_ROWS&includeValuesInResponse=false',
+      {
+        method:'POST',
+        headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+        body: JSON.stringify({values:[row]})
+      }
+    );
+    var data = await resp.json();
+    // 從回應中取得實際寫入的行號
+    if(data.updates && data.updates.updatedRange){
+      var match = data.updates.updatedRange.match(/!A(\d+)/);
+      if(match) rec._sheetRow = parseInt(match[1]);
+    }
+  }catch(e){console.warn('syncToSheets error:',e);}
+}
+
+
+// 清空指定工作表（保留第一行標題）
+async function sheetsClearData(sheetName){
+  try{
+    // 取得工作表目前資料範圍
+    var range = encodeURIComponent(sheetName+'!A2:Z10000');
+    await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+range+':clear',
+      {method:'POST', headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'}}
+    );
+  }catch(e){console.warn('sheetsClearData error:',e);}
+}
+
+// 全量同步所有 localStorage 資料到 Sheets（先清空再寫入）
+async function syncAllToSheets(){
+  if(!gdriveToken){
+    alert('請先連結 Google Drive');
+    return;
+  }
+  var btn = document.getElementById('sync-all-btn');
+  var status = document.getElementById('storage-status');
+  if(btn){btn.disabled=true;btn.textContent='⏳ 同步中...';}
+  try{
+    var total = matData.length+engData.length+wstData.length+trpData.length+perData.length;
+    if(total===0){
+      if(status){status.textContent='⚪ 目前沒有記錄需要同步';status.style.color='var(--hint)';}
+      if(btn){btn.disabled=false;btn.textContent='🔄 一鍵同步';}
+      return;
+    }
+    // ── Step1：先清空舊 Drive 佐證資料夾 ──
+    if(status) status.textContent='⏳ 清空舊佐證檔案中...';
+    if(gdriveFolderId){
+      // 列出資料夾內所有檔案
+      var listResp = await fetch(
+        'https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent("'"+gdriveFolderId+"' in parents and trashed=false")+'&fields=files(id)&pageSize=1000',
+        {headers:{Authorization:'Bearer '+gdriveToken}}
+      );
+      var listData = await listResp.json();
+      if(listData.files && listData.files.length){
+        for(var f of listData.files){
+          await driveDeleteFile(f.id);
+        }
+      }
+    }
+    // ── Step2：清空各 Sheet 工作表（保留標題列）──
+    if(status) status.textContent='⏳ 清空舊 Sheets 資料中...';
+    for(var cat of Object.keys(SHEET_NAMES)){
+      await sheetsClearData(SHEET_NAMES[cat]);
+    }
+    // ── Step3：重新上傳所有佐證到 Drive，並寫入 Sheets ──
+    var done = 0;
+    var allRecs = [
+      {cat:'mat',data:matData},
+      {cat:'eng',data:engData},
+      {cat:'wst',data:wstData},
+      {cat:'trp',data:trpData},
+      {cat:'per',data:perData}
+    ];
+    for(var group of allRecs){
+      for(var r of group.data){
+        // 重新上傳佐證到 Drive
+        if(r.files && r.files.length && gdriveFolderId && gdriveToken){
+          for(var fi=0; fi<r.files.length; fi++){
+            var fobj = r.files[fi];
+            if(fobj.dataURL){
+              try{
+                // 將 dataURL 轉回 Blob 並上傳
+                var parts = fobj.dataURL.split(',');
+                var mimeMatch = parts[0].match(/:(.*?);/);
+                var mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+                var bstr = atob(parts[1]);
+                var u8arr = new Uint8Array(bstr.length);
+                for(var bi=0;bi<bstr.length;bi++) u8arr[bi]=bstr.charCodeAt(bi);
+                var blob = new Blob([u8arr],{type:mime});
+                // 直接用 multipart upload
+                var metadata = {name:fobj.name, parents:[gdriveFolderId]};
+                var form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(metadata)],{type:'application/json'}));
+                form.append('file', blob, fobj.name);
+                var upResp = await fetch(
+                  'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
+                  {method:'POST', headers:{Authorization:'Bearer '+gdriveToken}, body:form}
+                );
+                var upData = await upResp.json();
+                if(upData.id){
+                  r.files[fi] = {
+                    name: fobj.name,
+                    size: fobj.size,
+                    ext: fobj.ext,
+                    mime: mime,
+                    isImage: mime.startsWith('image/'),
+                    isDrive: true,
+                    driveId: upData.id,
+                    driveViewLink: upData.webViewLink,
+                    driveDownloadLink: 'https://drive.google.com/uc?export=download&id='+upData.id,
+                    driveThumbLink: mime.startsWith('image/') ? 'https://drive.google.com/thumbnail?id='+upData.id+'&sz=w400' : null,
+                    dataURL: null
+                  };
+                }
+              }catch(e){console.warn('re-upload error:',fobj.name,e);}
+            }
+          }
+        }
+        await syncToSheets(group.cat, r);
+        done++;
+        if(status) status.textContent='⏳ 同步中 '+done+'/'+total+'...';
+      }
+    }
+    await syncSummaryToSheets();
+    if(status){
+      status.textContent='✅ 一鍵同步完成！共 '+total+' 筆（'+new Date().toLocaleTimeString('zh-TW')+'）';
+      status.style.color='var(--grn-t)';
+    }
+  }catch(e){
+    console.error('syncAllToSheets error:',e);
+    if(status){status.textContent='❌ 同步失敗：'+e.message;status.style.color='var(--red-t)';}
+  }finally{
+    if(btn){btn.disabled=false;btn.textContent='🔄 一鍵同步';}
+  }
+}
+
+// 同步摘要到 Sheets
+async function syncSummaryToSheets(){
+  if(!gdriveToken) return;
+  try{
+    var matT=(matData.reduce(function(s,r){return s+r.emission;},0)/1000).toFixed(3);
+    var engT=(engData.reduce(function(s,r){return s+r.emission;},0)/1000).toFixed(3);
+    var wstT=(wstData.reduce(function(s,r){return s+r.emission;},0)/1000).toFixed(3);
+    var trpT=(trpData.reduce(function(s,r){return s+r.emission;},0)/1000).toFixed(3);
+    var perT=(perData.reduce(function(s,r){return s+r.emission;},0)/1000).toFixed(3);
+    var conT=(parseFloat(matT)+parseFloat(engT)+parseFloat(wstT)+parseFloat(trpT)+parseFloat(perT)).toFixed(3);
+    var p3=parseFloat(document.getElementById('LC-p3').value)||0;
+    var p4=parseFloat(document.getElementById('LC-p4').value)||0;
+    var p5=parseFloat(document.getElementById('LC-p5').value)||0;
+    var lcT=(parseFloat(conT)+p3+p4+p5).toFixed(3);
+    var area=parseFloat(document.getElementById('LC-area').value)||0;
+    var fu=(parseFloat(lcT)>0&&area>0)?(parseFloat(lcT)*1000/area/60).toFixed(3):'';
+    var now=new Date().toLocaleString('zh-TW');
+    var rows=[
+      ['最後更新',now],
+      [''],
+      ['項目','tCO₂e'],
+      ['工程材料',matT],['能源消耗',engT],['廢棄物',wstT],['運輸車輛',trpT],['人員現場',perT],
+      ['施工合計',conT],
+      ['建築使用60年（階段3）',p3],['修繕更新（階段4）',p4],['拆除廢棄（階段5）',p5],
+      ['全生命週期',lcT],
+      [''],
+      ['功能單位（kgCO₂e/m²/年）',fu],
+      ['室內樓地板面積（m²）',area||''],
+    ];
+    var range = encodeURIComponent('盤查摘要!A1');
+    await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+range+'?valueInputOption=RAW',
+      {
+        method:'PUT',
+        headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+        body: JSON.stringify({values:rows})
+      }
+    );
+  }catch(e){console.warn('syncSummary error:',e);}
+}
+
+
+// 確保 Sacurn 佐證資料夾存在
+async function gdriveEnsureFolder(){
+  try{
+    // 先查詢是否已有此資料夾
+    var cached = localStorage.getItem('sacurn_gdrive_folder');
+    if(cached){
+      gdriveFolderId = cached;
+      gdriveSetStatus('已連結（資料夾：'+GDRIVE_FOLDER_NAME+'）', true);
+      sheetsInit();  // 每次連結都初始化 Sheets
+      return;
+    }
+    var searchResp = await fetch(
+      'https://www.googleapis.com/drive/v3/files?q=name%3D%22'+encodeURIComponent(GDRIVE_FOLDER_NAME)+'%22+and+mimeType%3D%22application%2Fvnd.google-apps.folder%22+and+trashed%3Dfalse&fields=files(id,name)',
+      {headers:{Authorization:'Bearer '+gdriveToken}}
+    );
+    var searchData = await searchResp.json();
+    if(searchData.files && searchData.files.length > 0){
+      gdriveFolderId = searchData.files[0].id;
+    } else {
+      // 建立新資料夾
+      var createResp = await fetch('https://www.googleapis.com/drive/v3/files', {
+        method:'POST',
+        headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+        body: JSON.stringify({name:GDRIVE_FOLDER_NAME, mimeType:'application/vnd.google-apps.folder'})
+      });
+      var createData = await createResp.json();
+      gdriveFolderId = createData.id;
+    }
+    localStorage.setItem('sacurn_gdrive_folder', gdriveFolderId);
+    gdriveSetStatus('已連結（資料夾：'+GDRIVE_FOLDER_NAME+'）', true);
+    sheetsInit();  // 初始化 Sheets 工作表
+  } catch(e){
+    gdriveSetStatus('資料夾建立失敗：'+e.message, false);
+  }
+}
+
+// 上傳檔案到 Google Drive
+async function gdriveUpload(file, cat){
+  if(!gdriveToken){
+    console.warn('gdriveUpload: no token');
+    return null;
+  }
+  try{
+    // 用 multipart upload
+    var metadata = {name: file.name, parents: gdriveFolderId ? [gdriveFolderId] : []};
+    var form = new FormData();
+    form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
+    form.append('file', file);
+    var resp = await fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink,webContentLink', {
+      method:'POST',
+      headers:{Authorization:'Bearer '+gdriveToken},
+      body: form
+    });
+    var data = await resp.json();
+    if(data.id){
+      return {
+        name: file.name,
+        size: (file.size/1024).toFixed(1),
+        ext: file.name.split('.').pop().toUpperCase(),
+        mime: file.type,
+        isImage: file.type.startsWith('image/'),
+        // Drive 模式：不存 dataURL，改存 Drive 資訊
+        isDrive: true,
+        driveId: data.id,
+        driveViewLink: data.webViewLink,
+        driveDownloadLink: 'https://drive.google.com/uc?export=download&id='+data.id,
+        driveThumbLink: file.type.startsWith('image/') ? 'https://drive.google.com/thumbnail?id='+data.id+'&sz=w400' : null,
+        dataURL: null
+      };
+    }
+    return null;
+  } catch(e){
+    alert('上傳失敗：'+e.message);
+    return null;
+  }
+}
+
+// Drive 選檔：用 input file 選本機後上傳到 Drive
+function gdrivePick(cat){
+  if(!gdriveToken){
+    // 未連結則先連結
+    var client = google.accounts.oauth2.initTokenClient({
+      client_id: GDRIVE_CLIENT_ID,
+      scope: GDRIVE_SCOPES,
+      callback: function(resp){
+        if(resp.error) return;
+        gdriveToken = resp.access_token;
+        gdriveConnected = true;
+        localStorage.setItem('sacurn_gdrive_token', gdriveToken);
+        gdriveSetStatus('已連結', true);
+        gdriveEnsureFolder().then(function(){ gdrivePick(cat); });
+      }
+    });
+    client.requestAccessToken();
+    return;
+  }
+  // 建立臨時 file input
+  var inp = document.createElement('input');
+  inp.type = 'file';
+  inp.multiple = true;
+  inp.onchange = async function(){
+    var status = document.getElementById('gdrive-status');
+    var files = Array.from(inp.files);
+    var uploaded = 0;
+    for(var f of files){
+      if(status) status.textContent = '☁ 上傳中 '+f.name+' ...';
+      // 先讀取 dataURL 備份
+      var dataURL = await new Promise(function(res){
+        var reader = new FileReader();
+        reader.onload = function(e){res(e.target.result);};
+        reader.readAsDataURL(f);
+      });
+      var fileObj = await gdriveUpload(f, cat);
+      if(fileObj){
+        // 保留 dataURL 作為備份（一鍵同步時用）
+        fileObj.dataURL = dataURL;
+        pendingFiles[cat].push(fileObj);
+        uploaded++;
+      } else {
+        // Drive 上傳失敗，改存本機
+        pendingFiles[cat].push({
+          name:f.name,size:(f.size/1024).toFixed(1),
+          ext:f.name.split('.').pop().toUpperCase(),
+          mime:f.type,isImage:f.type.startsWith('image/'),
+          isDrive:false,dataURL:dataURL
+        });
+        uploaded++;
+      }
+    }
+    renderChips(cat);
+    if(status) status.textContent = '✅ 已上傳 '+uploaded+' 個檔案至 Google Drive（'+GDRIVE_FOLDER_NAME+'）';
+    status.style.color = 'var(--grn-t)';
+  };
+  inp.click();
+}
+
+// 覆寫 renderChips：支援 Drive 模式
+var _origRenderChips = renderChips;
+renderChips = function(cat){
+  var c = document.getElementById(cat+'-ev-files');
+  if(!c) return;
+  var files = pendingFiles[cat];
+  if(!files || !files.length){
+    c.innerHTML = '<span style="font-size:12px;color:var(--hint)">尚未上傳</span>';
+    return;
+  }
+  c.innerHTML = files.map(function(f, i){
+    var extBg = ({mat:'#378ADD',eng:'#1D9E75',wst:'#BA7517',trp:'#7F77DD',per:'#D85A30'})[cat] || '#378ADD';
+    var driveTag = f.isDrive ? '<span style="font-size:9px;background:var(--grn-dim);color:var(--grn-t);border:1px solid var(--grn);border-radius:3px;padding:1px 4px;margin-left:3px">☁</span>' : '';
+    var previewBtn = '';
+    if(f.isDrive && f.driveViewLink){
+      previewBtn = '<a class="ev-chip-btn" href="'+f.driveViewLink+'" target="_blank">👁</a>';
+    } else if(f.isImage && f.dataURL){
+      previewBtn = '<button class="ev-chip-btn" onclick="previewPend(\''+cat+'\','+i+')">👁</button>';
+    }
+    var dlBtn = '';
+    if(f.isDrive && f.driveDownloadLink){
+      dlBtn = '<a class="ev-chip-btn" href="'+f.driveDownloadLink+'" target="_blank">⬇</a>';
+    } else if(f.dataURL){
+      dlBtn = '<button class="ev-chip-btn" onclick="dlPend(\''+cat+'\','+i+')">⬇</button>';
+    }
+    return '<div class="ev-chip">'
+      +'<span class="ev-chip-ext" style="background:'+extBg+'">'+f.ext+'</span>'
+      +'<span style="flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:130px">'+f.name+driveTag+'</span>'
+      +'<div class="ev-chip-acts">'+previewBtn+dlBtn
+        +'<span class="ev-chip-rm" onclick="removePend(\''+cat+'\','+i+')">×</span>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+};
+
+// 覆寫 openFileModal：支援 Drive 模式
+var _origOpenFileModal = openFileModal;
+openFileModal = function(f){
+  if(!f) return;
+  var content = '';
+  if(f.isDrive){
+    if(f.driveThumbLink){
+      content = '<img src="'+f.driveThumbLink+'" class="preview-img" alt="'+f.name+'" onerror="this.style.display=\'none\'">';
+    }
+    content += '<div style="text-align:center;margin-top:12px">'
+      +'<a href="'+f.driveViewLink+'" target="_blank" class="btn btn-p" style="margin-right:8px;text-decoration:none">☁ 在 Drive 開啟</a>'
+      +'<a href="'+f.driveDownloadLink+'" target="_blank" class="btn" style="text-decoration:none">⬇ 下載</a>'
+      +'</div>';
+  } else {
+    if(f.isImage && f.dataURL) content = '<img src="'+f.dataURL+'" class="preview-img" alt="'+f.name+'">';
+    else if(f.mime==='application/pdf' && f.dataURL) content = '<iframe src="'+f.dataURL+'" class="preview-pdf" title="'+f.name+'"></iframe>';
+    else content = '<div style="text-align:center;padding:30px;color:var(--muted);background:#141820;border-radius:8px">此格式需下載後查看</div>';
+    if(f.dataURL) content += '<div style="text-align:center;margin-top:12px"><button class="btn btn-p" onclick="downloadFile(\''+f.dataURL+'\',\''+f.name+'\')">⬇ 下載</button></div>';
+  }
+  var modal = document.getElementById('MODAL');
+  modal.innerHTML = '<div class="modal-bd" onclick="if(event.target===this)closeModal()">'
+    +'<div class="modal-box" style="min-width:300px;max-width:680px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:12px">'
+    +'<div><div style="font-size:14px;font-weight:500;color:var(--txt)">'+f.name+'</div>'
+    +(f.isDrive ? '<div style="font-size:11px;color:var(--grn-t);margin-top:2px">☁ 儲存於 Google Drive</div>' : '<div style="font-size:11px;color:var(--hint);margin-top:2px">'+f.size+' KB</div>')
+    +'</div>'
+    +'<button class="btn btn-sm" onclick="closeModal()">✕ 關閉</button>'
+    +'</div>'
+    +content
+    +'</div></div>';
+};
+
+// 頁面載入時嘗試還原 Drive 連結狀態（token 可能已過期，需重新授權）
+(function(){
+  // 檢查是否在正確的網域
+  var currentOrigin = window.location.origin;
+  var isLocalFile = window.location.protocol === 'file:';
+  var isGitHubPages = currentOrigin === 'https://joey022144-sketch.github.io';
+
+  if(isLocalFile){
+    var st = document.getElementById('gdrive-status');
+    var cb = document.getElementById('gdrive-connect-btn');
+    if(st) st.innerHTML = '⚠ 請用 <a href="https://joey022144-sketch.github.io/sacurn" target="_blank" style="color:var(--acc-t)">https://joey022144-sketch.github.io/sacurn</a> 開啟系統才能連結 Google Drive';
+    if(cb) cb.disabled = true;
+    if(cb) cb.style.opacity = '0.4';
+    return;
+  }
+
+  var saved = localStorage.getItem('sacurn_gdrive_token');
+  var savedFolder = localStorage.getItem('sacurn_gdrive_folder');
+  if(saved && savedFolder){
+    gdriveSetStatus('上次已連結，請點「重新連結」繼續使用', false);
+    var cb = document.getElementById('gdrive-connect-btn');
+    if(cb) cb.textContent = '🔗 重新連結 Google Drive';
+  }
+})();
+
+</script>
+</body>
+</html>
