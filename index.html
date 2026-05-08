@@ -797,7 +797,7 @@ function addMat(){
 function renderMT(){
   const tb=document.getElementById('MT');document.getElementById('MC').textContent=matData.length+' 筆';
   if(!matData.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr>';return;}
-  tb.innerHTML=matData.map((r,i)=>`<tr><td title="${r.name}">${r.name}</td><td>${r.qty.toLocaleString()}</td><td>${r.unit}</td><td>${r.coeff}</td><td>${r.emission.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'mat')}</td><td><button class="btn btn-sm btn-d" onclick="matData.splice(${i},1);renderMT();updateDash()">刪除</button></td></tr>`).join('');
+  tb.innerHTML=matData.map((r,i)=>`<tr><td title="${r.name}">${r.name}</td><td>${r.qty.toLocaleString()}</td><td>${r.unit}</td><td>${r.coeff}</td><td>${r.emission.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'mat')}</td><td><button class="btn btn-sm btn-d" onclick="deleteRec('mat',${i})">刪除</button></td></tr>`).join('');
 }
 
 // ══ Eng ══
@@ -816,7 +816,7 @@ function addEng(){
 function renderET(){
   const tb=document.getElementById('ET');
   if(!engData.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr>';return;}
-  tb.innerHTML=engData.map((r,i)=>`<tr><td>${r.name}</td><td>${r.qty.toLocaleString()}</td><td>${r.unit}</td><td>${r.coeff}</td><td>${r.emission.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'eng')}</td><td><button class="btn btn-sm btn-d" onclick="engData.splice(${i},1);renderET();updateDash()">刪除</button></td></tr>`).join('');
+  tb.innerHTML=engData.map((r,i)=>`<tr><td>${r.name}</td><td>${r.qty.toLocaleString()}</td><td>${r.unit}</td><td>${r.coeff}</td><td>${r.emission.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'eng')}</td><td><button class="btn btn-sm btn-d" onclick="deleteRec('eng',${i})">刪除</button></td></tr>`).join('');
 }
 
 // ══ Wst ══
@@ -832,7 +832,7 @@ function addWst(){
 function renderWT(){
   const tb=document.getElementById('WT');
   if(!wstData.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr>';return;}
-  tb.innerHTML=wstData.map((r,i)=>`<tr><td>${r.type}</td><td>${r.qty}</td><td>${r.method}</td><td>${r.emission.toFixed(2)}</td><td title="${r.supp}">${r.supp}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'wst')}</td><td><button class="btn btn-sm btn-d" onclick="wstData.splice(${i},1);renderWT();updateDash()">刪</button></td></tr>`).join('');
+  tb.innerHTML=wstData.map((r,i)=>`<tr><td>${r.type}</td><td>${r.qty}</td><td>${r.method}</td><td>${r.emission.toFixed(2)}</td><td title="${r.supp}">${r.supp}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'wst')}</td><td><button class="btn btn-sm btn-d" onclick="deleteRec('wst',${i})">刪</button></td></tr>`).join('');
 }
 
 // ══ Trp ══
@@ -874,7 +874,7 @@ function addTrp(){
 function renderTT(){
   const tb=document.getElementById('TT');document.getElementById('TC').textContent=trpData.length+' 筆';
   if(!trpData.length){tb.innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr>';return;}
-  tb.innerHTML=trpData.map((r,i)=>`<tr><td title="${r.typeName}">${r.typeName}</td><td>${r.plate}</td><td title="${r.vtypeName}">${r.vtypeName}</td><td title="${r.from}">${r.from}</td><td title="${r.to}">${r.to}</td><td>${r.dist}</td><td>${r.emission.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'trp')}</td><td><button class="btn btn-sm btn-d" onclick="trpData.splice(${i},1);renderTT();updateDash()">刪</button></td></tr>`).join('');
+  tb.innerHTML=trpData.map((r,i)=>`<tr><td title="${r.typeName}">${r.typeName}</td><td>${r.plate}</td><td title="${r.vtypeName}">${r.vtypeName}</td><td title="${r.from}">${r.from}</td><td title="${r.to}">${r.to}</td><td>${r.dist}</td><td>${r.emission.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'trp')}</td><td><button class="btn btn-sm btn-d" onclick="deleteRec('trp',${i})">刪</button></td></tr>`).join('');
 }
 
 // ══ Per ══
@@ -892,7 +892,7 @@ function addPer(){
 function renderPT(){
   const tb=document.getElementById('PT');document.getElementById('PC').textContent=perData.length+' 筆';
   if(!perData.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr>';return;}
-  tb.innerHTML=perData.map((r,i)=>`<tr><td>${r.cat}</td><td>${r.n}</td><td>${r.h}hr</td><td>${r.site.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'per')}</td><td><button class="btn btn-sm btn-d" onclick="perData.splice(${i},1);renderPT();updateDash()">刪除</button></td></tr>`).join('');
+  tb.innerHTML=perData.map((r,i)=>`<tr><td>${r.cat}</td><td>${r.n}</td><td>${r.h}hr</td><td>${r.site.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'per')}</td><td><button class="btn btn-sm btn-d" onclick="deleteRec('per',${i})">刪除</button></td></tr>`).join('');
 }
 
 // ══ LC ══
@@ -1695,6 +1695,52 @@ async function sheetsAppendRow(sheetName, values){
   }
 }
 
+
+// 從 Sheets 刪除指定行（用空白行覆蓋）
+async function sheetsDeleteRow(sheetName, rowIndex){
+  if(!gdriveToken || !rowIndex) return;
+  try{
+    // 先取得 sheetId
+    var resp = await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'?fields=sheets.properties',
+      {headers:{Authorization:'Bearer '+gdriveToken}}
+    );
+    var data = await resp.json();
+    var sheet = (data.sheets||[]).find(function(s){return s.properties.title===sheetName;});
+    if(!sheet) return;
+    var sheetId = sheet.properties.sheetId;
+    // 刪除該行
+    await fetch('https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+':batchUpdate',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+      body:JSON.stringify({requests:[{deleteDimension:{range:{sheetId:sheetId,dimension:'ROWS',startIndex:rowIndex-1,endIndex:rowIndex}}}]})
+    });
+  }catch(e){console.warn('sheetsDeleteRow error:',e);}
+}
+
+// 刪除記錄並同步到 Sheets
+function deleteRec(cat, i){
+  if(!confirm('確定刪除這筆記錄？')) return;
+  var dataMap = {mat:matData,eng:engData,wst:wstData,trp:trpData,per:perData};
+  var renderMap = {mat:renderMT,eng:renderET,wst:renderWT,trp:renderTT,per:renderPT};
+  var arr = dataMap[cat];
+  var rec = arr[i];
+  // 從 Sheets 刪除
+  if(rec && rec._sheetRow && gdriveToken){
+    sheetsDeleteRow(SHEET_NAMES[cat], rec._sheetRow);
+    syncSummaryToSheets();
+  }
+  arr.splice(i,1);
+  // 更新剩餘記錄的 _sheetRow（因為刪除後行號都往上移一行）
+  if(rec && rec._sheetRow){
+    arr.forEach(function(r){
+      if(r._sheetRow && r._sheetRow > rec._sheetRow) r._sheetRow--;
+    });
+  }
+  renderMap[cat]();
+  updateDash();
+}
+
 // 產生唯一記錄 ID
 function makeRecId(){
   return new Date().toISOString().replace(/[-:.TZ]/g,'').slice(0,15)+Math.random().toString(36).slice(2,6).toUpperCase();
@@ -1709,7 +1755,7 @@ function formatFiles(files){
   }).join('、');
 }
 
-// 同步單筆記錄到 Sheets
+// 同步單筆記錄到 Sheets，並記錄行號到 rec._sheetRow
 async function syncToSheets(cat, rec){
   if(!gdriveToken) return;
   var GN={1:'一級',2:'二級',3:'三級'};
@@ -1727,7 +1773,24 @@ async function syncToSheets(cat, rec){
   }else if(cat==='per'){
     row=[id,rec.cat,rec.n,rec.h,rec.site.toFixed(2),rec.date,GN[rec.grade]||'',now];
   }
-  await sheetsAppendRow(SHEET_NAMES[cat], row);
+  try{
+    var sheetName = SHEET_NAMES[cat];
+    var range = encodeURIComponent(sheetName+'!A1');
+    var resp = await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+range+':append?valueInputOption=USER_ENTERED&insertDataOption=INSERT_ROWS&includeValuesInResponse=false&responseValueRenderOption=UNFORMATTED_VALUE',
+      {
+        method:'POST',
+        headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+        body: JSON.stringify({values:[row]})
+      }
+    );
+    var data = await resp.json();
+    // 從回應中取得實際寫入的行號
+    if(data.updates && data.updates.updatedRange){
+      var match = data.updates.updatedRange.match(/!A(\d+)/);
+      if(match) rec._sheetRow = parseInt(match[1]);
+    }
+  }catch(e){console.warn('syncToSheets error:',e);}
 }
 
 // 同步摘要到 Sheets
