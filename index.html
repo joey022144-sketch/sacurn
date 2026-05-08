@@ -1855,26 +1855,73 @@ async function syncAllToSheets(){
       if(btn){btn.disabled=false;btn.textContent='🔄 一鍵同步';}
       return;
     }
-    if(!confirm('同步前會先清空 Sheets 所有舊資料，再重新寫入 '+total+' 筆，確定繼續？')) {
-      if(btn){btn.disabled=false;btn.textContent='🔄 一鍵同步';}
-      return;
+    // ── Step1：先清空舊 Drive 佐證資料夾 ──
+    if(status) status.textContent='⏳ 清空舊佐證檔案中...';
+    if(gdriveFolderId){
+      // 列出資料夾內所有檔案
+      var listResp = await fetch(
+        'https://www.googleapis.com/drive/v3/files?q='+encodeURIComponent("'"+gdriveFolderId+"' in parents and trashed=false")+'&fields=files(id)&pageSize=1000',
+        {headers:{Authorization:'Bearer '+gdriveToken}}
+      );
+      var listData = await listResp.json();
+      if(listData.files && listData.files.length){
+        for(var f of listData.files){
+          await driveDeleteFile(f.id);
+        }
+      }
     }
-    // 先清空各工作表（保留標題列）
-    if(status) status.textContent='⏳ 清空舊資料中...';
+    // ── Step2：清空各 Sheet 工作表（保留標題列）──
+    if(status) status.textContent='⏳ 清空舊 Sheets 資料中...';
     for(var cat of Object.keys(SHEET_NAMES)){
       await sheetsClearData(SHEET_NAMES[cat]);
     }
-    // 重新寫入所有資料
+    // ── Step3：重新上傳所有佐證到 Drive，並寫入 Sheets ──
     var done = 0;
-    for(var r of matData){await syncToSheets('mat',r);done++;if(status)status.textContent='⏳ 同步中 '+done+'/'+total+'...';}
-    for(var r of engData){await syncToSheets('eng',r);done++;if(status)status.textContent='⏳ 同步中 '+done+'/'+total+'...';}
-    for(var r of wstData){await syncToSheets('wst',r);done++;if(status)status.textContent='⏳ 同步中 '+done+'/'+total+'...';}
-    for(var r of trpData){await syncToSheets('trp',r);done++;if(status)status.textContent='⏳ 同步中 '+done+'/'+total+'...';}
-    for(var r of perData){await syncToSheets('per',r);done++;if(status)status.textContent='⏳ 同步中 '+done+'/'+total+'...';}
+    var allRecs = [
+      {cat:'mat',data:matData},
+      {cat:'eng',data:engData},
+      {cat:'wst',data:wstData},
+      {cat:'trp',data:trpData},
+      {cat:'per',data:perData}
+    ];
+    for(var group of allRecs){
+      for(var r of group.data){
+        // 重新上傳佐證到 Drive
+        if(r.files && r.files.length && gdriveFolderId){
+          for(var fi=0; fi<r.files.length; fi++){
+            var fobj = r.files[fi];
+            // 如果是本機 dataURL，重新上傳到 Drive
+            if(!fobj.isDrive && fobj.dataURL){
+              try{
+                // 將 dataURL 轉回 Blob
+                var arr = fobj.dataURL.split(',');
+                var mimeMatch = arr[0].match(/:(.*?);/);
+                var mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
+                var bstr = atob(arr[1]);
+                var u8arr = new Uint8Array(bstr.length);
+                for(var i=0;i<bstr.length;i++) u8arr[i]=bstr.charCodeAt(i);
+                var blob = new Blob([u8arr],{type:mime});
+                var file = new File([blob], fobj.name, {type:mime});
+                var uploaded = await gdriveUpload(file, group.cat);
+                if(uploaded){
+                  r.files[fi] = uploaded; // 更新為 Drive 版本
+                }
+              }catch(e){console.warn('re-upload error:',e);}
+            }
+          }
+        }
+        await syncToSheets(group.cat, r);
+        done++;
+        if(status) status.textContent='⏳ 同步中 '+done+'/'+total+'...';
+      }
+    }
     await syncSummaryToSheets();
-    if(status){status.textContent='✅ 全量同步完成！共 '+total+' 筆（'+new Date().toLocaleTimeString('zh-TW')+'）';status.style.color='var(--grn-t)';}
+    if(status){
+      status.textContent='✅ 一鍵同步完成！共 '+total+' 筆（'+new Date().toLocaleTimeString('zh-TW')+'）';
+      status.style.color='var(--grn-t)';
+    }
   }catch(e){
-    alert('同步失敗：'+e.message);
+    console.error('syncAllToSheets error:',e);
     if(status){status.textContent='❌ 同步失敗：'+e.message;status.style.color='var(--red-t)';}
   }finally{
     if(btn){btn.disabled=false;btn.textContent='🔄 一鍵同步';}
