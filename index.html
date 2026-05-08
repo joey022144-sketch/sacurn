@@ -825,8 +825,10 @@ function addWst(){
   const type=document.getElementById('I-wt').value,qty=parseFloat(document.getElementById('I-wq').value),c=parseFloat(document.getElementById('I-wm').value)||0.5;
   if(!qty){alert('請填寫數量');return;}
   const mN={'0.5':'掩埋','0.05':'回收','0.3':'焚化'},tN={concrete_w:'混凝土廢棄',rebar_w:'鋼筋廢棄',general:'一般廢棄物',recyclable:'資源回收',hazardous:'有害廢棄物'};
-  wstData.push({type:tN[type],qty,method:mN[String(c)],supp:document.getElementById('I-wsupp').value||'—',grade:document.getElementById('I-wg').value,date:getDate('wst-dr'),emission:qty*1000*c,files:[...pendingFiles.wst]});
+  var wstRec={type:tN[type],qty,method:mN[String(c)],supp:document.getElementById('I-wsupp').value||'—',grade:document.getElementById('I-wg').value,date:getDate('wst-dr'),emission:qty*1000*c,files:[...pendingFiles.wst]};
+  wstData.push(wstRec);
   pendingFiles.wst=[];renderChips('wst');renderWT();updateDash();
+  syncToSheets('wst',wstRec);syncSummaryToSheets();
   document.getElementById('wst-ai-result').style.display='none';
 }
 function renderWT(){
@@ -867,8 +869,10 @@ function addTrp(){
   const isPerson=type==='commute'||type==='biz';
   const pcount=parseFloat(document.getElementById('T-pcount').value)||1,load=parseFloat(document.getElementById('T-load').value)||0;
   const em=isPerson?pcount*dist*2*coeff*trips:dist*load*coeff*trips;
-  trpData.push({typeName,plate,vtypeName,from,to,dist,trips,coeff,load,pcount,isPerson,grade:document.getElementById('T-grade').value,date:getDate('trp-dr'),emission:em,files:[...pendingFiles.trp]});
+  var trpRec={typeName,plate,vtypeName,from,to,dist,trips,coeff,load,pcount,isPerson,grade:document.getElementById('T-grade').value,date:getDate('trp-dr'),emission:em,files:[...pendingFiles.trp]};
+  trpData.push(trpRec);
   pendingFiles.trp=[];renderChips('trp');renderTT();updateDash();
+  syncToSheets('trp',trpRec);syncSummaryToSheets();
   document.getElementById('trp-ai-result').style.display='none';
 }
 function renderTT(){
@@ -1848,6 +1852,7 @@ async function gdriveEnsureFolder(){
     if(cached){
       gdriveFolderId = cached;
       gdriveSetStatus('已連結（資料夾：'+GDRIVE_FOLDER_NAME+'）', true);
+      sheetsInit();  // 每次連結都初始化 Sheets
       return;
     }
     var searchResp = await fetch(
