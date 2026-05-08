@@ -1887,26 +1887,45 @@ async function syncAllToSheets(){
     for(var group of allRecs){
       for(var r of group.data){
         // 重新上傳佐證到 Drive
-        if(r.files && r.files.length && gdriveFolderId){
+        if(r.files && r.files.length && gdriveFolderId && gdriveToken){
           for(var fi=0; fi<r.files.length; fi++){
             var fobj = r.files[fi];
-            // 如果是本機 dataURL，重新上傳到 Drive
-            if(!fobj.isDrive && fobj.dataURL){
+            if(fobj.dataURL){
               try{
-                // 將 dataURL 轉回 Blob
-                var arr = fobj.dataURL.split(',');
-                var mimeMatch = arr[0].match(/:(.*?);/);
+                // 將 dataURL 轉回 Blob 並上傳
+                var parts = fobj.dataURL.split(',');
+                var mimeMatch = parts[0].match(/:(.*?);/);
                 var mime = mimeMatch ? mimeMatch[1] : 'application/octet-stream';
-                var bstr = atob(arr[1]);
+                var bstr = atob(parts[1]);
                 var u8arr = new Uint8Array(bstr.length);
-                for(var i=0;i<bstr.length;i++) u8arr[i]=bstr.charCodeAt(i);
+                for(var bi=0;bi<bstr.length;bi++) u8arr[bi]=bstr.charCodeAt(bi);
                 var blob = new Blob([u8arr],{type:mime});
-                var file = new File([blob], fobj.name, {type:mime});
-                var uploaded = await gdriveUpload(file, group.cat);
-                if(uploaded){
-                  r.files[fi] = uploaded; // 更新為 Drive 版本
+                // 直接用 multipart upload
+                var metadata = {name:fobj.name, parents:[gdriveFolderId]};
+                var form = new FormData();
+                form.append('metadata', new Blob([JSON.stringify(metadata)],{type:'application/json'}));
+                form.append('file', blob, fobj.name);
+                var upResp = await fetch(
+                  'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
+                  {method:'POST', headers:{Authorization:'Bearer '+gdriveToken}, body:form}
+                );
+                var upData = await upResp.json();
+                if(upData.id){
+                  r.files[fi] = {
+                    name: fobj.name,
+                    size: fobj.size,
+                    ext: fobj.ext,
+                    mime: mime,
+                    isImage: mime.startsWith('image/'),
+                    isDrive: true,
+                    driveId: upData.id,
+                    driveViewLink: upData.webViewLink,
+                    driveDownloadLink: 'https://drive.google.com/uc?export=download&id='+upData.id,
+                    driveThumbLink: mime.startsWith('image/') ? 'https://drive.google.com/thumbnail?id='+upData.id+'&sz=w400' : null,
+                    dataURL: null
+                  };
                 }
-              }catch(e){console.warn('re-upload error:',e);}
+              }catch(e){console.warn('re-upload error:',fobj.name,e);}
             }
           }
         }
