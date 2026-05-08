@@ -1758,6 +1758,51 @@ function exportExcel(){
   });
   s+=sheet('排放係數清冊(C-1)',coefRows);
 
+  // ── C-2 DQI 評估 ──
+  if(dqiRecs && dqiRecs.length){
+    var dqiRows2='<tr>'+th('評估對象')+th('DQI 總分')+th('品質等級')+'</tr>';
+    dqiRecs.forEach(function(r){dqiRows2+='<tr>'+td(r.name)+tn(r.sc)+td(r.g)+'</tr>';});
+    s+=sheet('C-2 DQI評估',dqiRows2);
+  }
+
+  // ── C-4 不確定性分析 ──
+  var ucTotal2=matT+engT+wstT+trpT+perT;
+  var ucItems2=[
+    {name:'工程材料',val:matT,uc:ucValues?ucValues.mat:15},
+    {name:'能源消耗',val:engT,uc:ucValues?ucValues.eng:5},
+    {name:'廢棄物',val:wstT,uc:ucValues?ucValues.wst:20},
+    {name:'運輸車輛',val:trpT,uc:ucValues?ucValues.trp:10},
+    {name:'人員現場',val:perT,uc:ucValues?ucValues.per:20},
+  ];
+  var sumSq2=0;
+  ucItems2.forEach(function(it){var wi=ucTotal2>0?it.val/ucTotal2:0;sumSq2+=Math.pow(wi*(it.uc/100),2);});
+  var overall2=(Math.sqrt(sumSq2)*100).toFixed(1);
+  var ucRows2='<tr>'+th('排放類別')+th('排放量(tCO₂e)')+th('佔比(%)')+th('不確定度(%)')+th('加權貢獻')+'</tr>';
+  ucItems2.forEach(function(it){
+    var pct=ucTotal2>0?(it.val/ucTotal2*100):0;
+    var contrib=(pct/100*it.uc).toFixed(2);
+    ucRows2+='<tr>'+td(it.name)+tn(it.val.toFixed(3))+tn(pct.toFixed(1)+'%')+tn(it.uc+'%')+tn(contrib)+'</tr>';
+  });
+  ucRows2+='<tr>'+th('合計')+th(ucTotal2.toFixed(3))+th('100%')+th('')+th('')+'</tr>';
+  ucRows2+='<tr>'+td('')+td('')+td('')+td('')+td('')+'</tr>';
+  ucRows2+='<tr>'+th('整體不確定度（算術平方根法）')+th('± '+overall2+'%')+td('等級：'+(parseFloat(overall2)<=10?'優良(≤10%)':parseFloat(overall2)<=20?'尚可(≤20%)':'需改善(>20%)'))+td('')+td('')+'</tr>';
+  s+=sheet('C-4不確定性分析',ucRows2);
+
+  // ── 5% 重大性原則 ──
+  var exC2=parseFloat(document.getElementById('EX-c').value)||0;
+  var exS2=parseFloat(document.getElementById('EX-s').value)||0;
+  var exR2=parseFloat(document.getElementById('EX-r').value)||0;
+  var exTotal2=exC2+exS2+exR2;
+  var exPct2=lcT>0?(exTotal2/(lcT*1000)*100):0;
+  var exRows2='<tr>'+th('排除項目')+th('kgCO₂e')+'</tr>'
+    +'<tr>'+td('工人通勤')+tn(exC2)+'</tr>'
+    +'<tr>'+td('辦公文具')+tn(exS2)+'</tr>'
+    +'<tr>'+td('冷媒逸散')+tn(exR2)+'</tr>'
+    +'<tr>'+th('合計')+th(exTotal2.toFixed(2))+'</tr>'
+    +'<tr>'+td('佔全生命週期比例')+tn(exPct2.toFixed(2)+'%')+'</tr>'
+    +'<tr>'+td('是否符合5%原則')+td(exPct2<=5?'✓ 符合':'✗ 超標')+'</tr>';
+  s+=sheet('5%重大性原則',exRows2);
+
   // 組合完整 HTML
   var fullHtml='<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">'
     +'<head><meta charset="UTF-8">'
