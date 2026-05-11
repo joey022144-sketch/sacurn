@@ -310,6 +310,7 @@ tbody tr:hover td{background:var(--acc-dim)}
   <div class="alert al-pur" style="margin-bottom:12px">
     📋 將廠商 LINE 訊息、日報截圖或任何工地對話貼入下方，AI 自動識別並填入對應欄位。
   </div>
+  <div class="alert al-g" style="margin-bottom:12px">✅ AI 辨識由 Google Gemini 提供（免費，每天 1500 次）</div>
 
   <!-- 輸入區 -->
   <div class="card">
@@ -894,7 +895,7 @@ function nav(p,btn){
   document.getElementById('TBT').textContent=t[p]||p;
   if(p==='dash')updateDash();
   if(p==='input'){buildMatSel();buildEngSel();buildVtypeSel();}
-  if(p==='parse'){buildMatSel();buildEngSel();}
+  if(p==='parse'){buildMatSel();buildEngSel();initApiKey();}
   if(p==='set-eng'){renderEngPanels();}
   if(p==='set-mat'){renderMatSet();}
   if(p==='set-vtype'){renderVtypeSet();}
@@ -955,6 +956,24 @@ function applyMC(){const m=matDB.find(x=>x.id===document.getElementById('I-mc').
 
 var parsedItems = []; // 儲存解析結果
 
+// Gemini API
+var GEMINI_KEY = 'AIzaSyAkoK09_tw5mbAyBAaw2L8p31CV8Wt99Og';
+var GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
+
+async function callGemini(prompt, imageBase64, imageMime){
+  var parts = [{text:prompt}];
+  if(imageBase64) parts.unshift({inline_data:{mime_type:imageMime,data:imageBase64}});
+  var resp = await fetch(GEMINI_URL,{
+    method:'POST',
+    headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
+    body:JSON.stringify({contents:[{parts:parts}],generationConfig:{temperature:0.1,maxOutputTokens:8192}})
+  });
+  var data = await resp.json();
+  if(data.error) throw new Error(data.error.message);
+  return data.candidates[0].content.parts[0].text;
+}
+function initApiKey(){}
+
 // 民國年轉西元
 function rocToAD(text){
   return text.replace(/(\d{2,3})年(\d{1,2})月(\d{1,2})日/g, function(m, y, mo, d){
@@ -986,23 +1005,7 @@ async function parseFromImage(inp){
   document.getElementById('parse-log').style.display='none';
 
   try{
-    var resp = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:2000,
-        messages:[{
-          role:'user',
-          content:[
-            {type:'image',source:{type:'base64',media_type:file.type,data:base64}},
-            {type:'text',text:PARSE_PROMPT}
-          ]
-        }]
-      })
-    });
-    var data = await resp.json();
-    var text = (data.content||[]).map(function(b){return b.text||'';}).join('');
+    var text = await callGemini(PARSE_PROMPT, base64, file.type);
     document.getElementById('parse-text').value = '（圖片內容已識別）';
     processParsedJSON(text);
   }catch(e){
@@ -1021,17 +1024,7 @@ async function parseDialogue(){
   document.getElementById('parse-log').style.display='none';
 
   try{
-    var resp = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
-      body: JSON.stringify({
-        model:'claude-sonnet-4-20250514',
-        max_tokens:2000,
-        messages:[{role:'user',content:PARSE_PROMPT+'\n\n以下是對話內容：\n'+text}]
-      })
-    });
-    var data = await resp.json();
-    var result = (data.content||[]).map(function(b){return b.text||'';}).join('');
+    var result = await callGemini(PARSE_PROMPT+'\n\n以下是對話內容：\n'+text);
     processParsedJSON(result);
   }catch(e){
     document.getElementById('parse-loading').style.display='none';
@@ -1068,8 +1061,15 @@ var PARSE_PROMPT = '你是建築工地碳足跡盤查助理。分析以下工地
 function processParsedJSON(text){
   document.getElementById('parse-loading').style.display='none';
   try{
-    var jsonMatch = text.match(/\{[\s\S]*\}/);
-    if(!jsonMatch) throw new Error('無法解析 AI 回傳格式');
+    console.log('AI raw response:', text);
+    // 移除 markdown code block
+    var cleaned = text.replace(/```json/g,'').replace(/```/g,'').trim();
+    // 抓取最完整的 JSON（從第一個 { 到最後一個 }）
+    var start = cleaned.indexOf('{');
+    var end = cleaned.lastIndexOf('}');
+    if(start===-1||end===-1) throw new Error('無法解析 AI 回傳格式，原始回應：'+text.substring(0,300));
+    var jsonStr = cleaned.substring(start, end+1);
+    var jsonMatch = [jsonStr];
     var parsed = JSON.parse(jsonMatch[0]);
     parsedItems = parsed.records || [];
     var date = parsed.date || '';
@@ -1138,9 +1138,23 @@ function renderParseCards(summary, date){
     }
     html += '</div>';
 
-    // 缺少的欄位
+    // 缺少的欄位 - 改成可輸入的欄位
     if(missing.length){
-      html += '<div style="font-size:11px;color:var(--amb-t)">⚠ 需補充：'+missing.join('、')+'</div>';
+      var missingLabels = {name:'材料名稱',qty:'數量',unit:'單位',sup:'供應商',energy_type:'能源類型',waste_type:'廢棄物類型',method:'處理方式',supp:'清運商',purpose:'用途',vehicle:'車輛',plate:'車牌',from:'出發地',to:'目的地',dist:'距離(km)',pcount:'人數',category:'人員類別',count:'人數',hours:'工時(hr)'};
+      html += '<div style="border-top:1px solid var(--bdr);padding-top:8px;margin-top:4px">';
+      html += '<div style="font-size:10px;color:var(--amb-t);margin-bottom:6px">⚠ 請補充以下欄位：</div>';
+      html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">';
+      missing.forEach(function(k){
+        var label = missingLabels[k]||k;
+        html += '<div>';
+        html += '<div style="font-size:10px;color:var(--hint);margin-bottom:2px">'+label+'</div>';
+        html += '<input type="text" placeholder="請輸入'+label+'" '
+          +'id="missing-'+idx+'-'+k+'" '
+          +'style="width:100%;padding:5px 8px;font-size:12px;border:1px solid var(--amb);border-radius:5px;background:#141820;color:var(--txt);font-family:inherit;outline:none" '
+          +'oninput="parsedItems['+idx+'].fields[\''+k+'\']=this.value">';
+        html += '</div>';
+      });
+      html += '</div></div>';
     }
 
     html += '</div>';
@@ -1268,6 +1282,155 @@ function showParseLog(msg){
   content.innerHTML += '<div>'+msg+'</div>';
 }
 
+
+// ══ 記錄編輯功能 ══
+function openEditModal(cat, i){
+  var dataMap = {mat:matData,eng:engData,wst:wstData,trp:trpData,per:perData};
+  var r = dataMap[cat][i];
+  if(!r) return;
+
+  var GN = {1:'一級',2:'二級',3:'三級'};
+  var fields = '';
+
+  if(cat==='mat'){
+    fields = '<div class="g2">'
+      +'<div class="fg"><label>材料名稱</label><input id="edit-name" value="'+r.name+'"></div>'
+      +'<div class="fg"><label>數量</label><input id="edit-qty" type="number" value="'+r.qty+'"></div>'
+      +'</div>'
+      +'<div class="g3">'
+      +'<div class="fg"><label>單位</label><input id="edit-unit" value="'+r.unit+'"></div>'
+      +'<div class="fg"><label>係數</label><input id="edit-coeff" type="number" step="0.001" value="'+r.coeff+'"></div>'
+      +'<div class="fg"><label>供應商</label><input id="edit-sup" value="'+(r.sup||'')+'"></div>'
+      +'</div>'
+      +'<div class="g2">'
+      +'<div class="fg"><label>日期</label><input id="edit-date" type="date" value="'+(r.date||'').replace(/\//g,'-')+'"></div>'
+      +'<div class="fg"><label>數據等級</label><select id="edit-grade"><option value="1"'+(r.grade==1?' selected':'')+'>一級</option><option value="2"'+(r.grade==2?' selected':'')+'>二級</option><option value="3"'+(r.grade==3?' selected':'')+'>三級</option></select></div>'
+      +'</div>';
+  } else if(cat==='eng'){
+    fields = '<div class="g2">'
+      +'<div class="fg"><label>能源名稱</label><input id="edit-name" value="'+r.name+'"></div>'
+      +'<div class="fg"><label>消耗量</label><input id="edit-qty" type="number" value="'+r.qty+'"></div>'
+      +'</div>'
+      +'<div class="g3">'
+      +'<div class="fg"><label>單位</label><input id="edit-unit" value="'+r.unit+'"></div>'
+      +'<div class="fg"><label>係數</label><input id="edit-coeff" type="number" step="0.001" value="'+r.coeff+'"></div>'
+      +'<div class="fg"><label>日期</label><input id="edit-date" type="date" value="'+(r.date||'').replace(/\//g,'-')+'"></div>'
+      +'</div>'
+      +'<div class="fg"><label>數據等級</label><select id="edit-grade"><option value="1"'+(r.grade==1?' selected':'')+'>一級</option><option value="2"'+(r.grade==2?' selected':'')+'>二級</option><option value="3"'+(r.grade==3?' selected':'')+'>三級</option></select></div>';
+  } else if(cat==='wst'){
+    fields = '<div class="g2">'
+      +'<div class="fg"><label>廢棄物類型</label><input id="edit-type" value="'+r.type+'"></div>'
+      +'<div class="fg"><label>數量(ton)</label><input id="edit-qty" type="number" value="'+r.qty+'"></div>'
+      +'</div>'
+      +'<div class="g3">'
+      +'<div class="fg"><label>處理方式</label><input id="edit-method" value="'+r.method+'"></div>'
+      +'<div class="fg"><label>清運商</label><input id="edit-supp" value="'+(r.supp||'')+'"></div>'
+      +'<div class="fg"><label>日期</label><input id="edit-date" type="date" value="'+(r.date||'').replace(/\//g,'-')+'"></div>'
+      +'</div>'
+      +'<div class="fg"><label>數據等級</label><select id="edit-grade"><option value="1"'+(r.grade==1?' selected':'')+'>一級</option><option value="2"'+(r.grade==2?' selected':'')+'>二級</option><option value="3"'+(r.grade==3?' selected':'')+'>三級</option></select></div>';
+  } else if(cat==='trp'){
+    fields = '<div class="g2">'
+      +'<div class="fg"><label>用途</label><input id="edit-typeName" value="'+r.typeName+'"></div>'
+      +'<div class="fg"><label>車牌</label><input id="edit-plate" value="'+r.plate+'"></div>'
+      +'</div>'
+      +'<div class="g3">'
+      +'<div class="fg"><label>出發地</label><input id="edit-from" value="'+r.from+'"></div>'
+      +'<div class="fg"><label>目的地</label><input id="edit-to" value="'+r.to+'"></div>'
+      +'<div class="fg"><label>距離(km)</label><input id="edit-dist" type="number" value="'+r.dist+'"></div>'
+      +'</div>'
+      +'<div class="g2">'
+      +'<div class="fg"><label>日期</label><input id="edit-date" type="date" value="'+(r.date||'').replace(/\//g,'-')+'"></div>'
+      +'<div class="fg"><label>數據等級</label><select id="edit-grade"><option value="1"'+(r.grade==1?' selected':'')+'>一級</option><option value="2"'+(r.grade==2?' selected':'')+'>二級</option><option value="3"'+(r.grade==3?' selected':'')+'>三級</option></select></div>'
+      +'</div>';
+  } else if(cat==='per'){
+    fields = '<div class="g3">'
+      +'<div class="fg"><label>人員類別</label><input id="edit-cat" value="'+r.cat+'"></div>'
+      +'<div class="fg"><label>人數</label><input id="edit-n" type="number" value="'+r.n+'"></div>'
+      +'<div class="fg"><label>工時(hr)</label><input id="edit-h" type="number" value="'+r.h+'"></div>'
+      +'</div>'
+      +'<div class="g2">'
+      +'<div class="fg"><label>日期</label><input id="edit-date" type="date" value="'+(r.date||'').replace(/\//g,'-')+'"></div>'
+      +'<div class="fg"><label>數據等級</label><select id="edit-grade"><option value="1"'+(r.grade==1?' selected':'')+'>一級</option><option value="2"'+(r.grade==2?' selected':'')+'>二級</option><option value="3"'+(r.grade==3?' selected':'')+'>三級</option></select></div>'
+      +'</div>';
+  }
+
+  var catNames = {mat:'工程材料',eng:'能源消耗',wst:'廢棄物',trp:'運輸車輛',per:'人員現場'};
+  document.getElementById('MODAL').innerHTML =
+    '<div class="modal-bd" onclick="if(event.target===this)closeModal()">'
+    +'<div class="modal-box" style="min-width:480px;max-width:640px">'
+    +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
+    +'<div style="font-size:14px;font-weight:600;color:var(--txt)">編輯 '+catNames[cat]+' 記錄</div>'
+    +'<button class="btn btn-sm" onclick="closeModal()">✕ 關閉</button>'
+    +'</div>'
+    +fields
+    +'<div style="display:flex;gap:8px;margin-top:14px;justify-content:flex-end">'
+    +'<button class="btn btn-sm btn-d" onclick="deleteRec(&quot;'+cat+'&quot;,'+i+');closeModal()">🗑 刪除</button>'
+    +'<button class="btn btn-p" onclick="saveEdit(&quot;'+cat+'&quot;,'+i+')">✓ 儲存</button>'
+    +'</div>'
+    +'</div></div>';
+}
+
+function saveEdit(cat, i){
+  var dataMap = {mat:matData,eng:engData,wst:wstData,trp:trpData,per:perData};
+  var renderMap = {mat:renderMT,eng:renderET,wst:renderWT,trp:renderTT,per:renderPT};
+  var r = dataMap[cat][i];
+  if(!r) return;
+
+  var g = function(id){ var el=document.getElementById(id); return el?el.value:''; };
+  var date = g('edit-date').replace(/-/g,'/');
+
+  if(cat==='mat'){
+    r.name=g('edit-name')||r.name;
+    r.qty=parseFloat(g('edit-qty'))||r.qty;
+    r.unit=g('edit-unit')||r.unit;
+    r.coeff=parseFloat(g('edit-coeff'))||r.coeff;
+    r.sup=g('edit-sup');
+    r.date=date||r.date;
+    r.grade=parseInt(g('edit-grade'))||r.grade;
+    r.emission=r.qty*r.coeff;
+  } else if(cat==='eng'){
+    r.name=g('edit-name')||r.name;
+    r.qty=parseFloat(g('edit-qty'))||r.qty;
+    r.unit=g('edit-unit')||r.unit;
+    r.coeff=parseFloat(g('edit-coeff'))||r.coeff;
+    r.date=date||r.date;
+    r.grade=parseInt(g('edit-grade'))||r.grade;
+    r.emission=r.qty*r.coeff;
+  } else if(cat==='wst'){
+    r.type=g('edit-type')||r.type;
+    r.qty=parseFloat(g('edit-qty'))||r.qty;
+    r.method=g('edit-method')||r.method;
+    r.supp=g('edit-supp');
+    r.date=date||r.date;
+    r.grade=parseInt(g('edit-grade'))||r.grade;
+    var wc=wstCoeffDB.find(function(w){return w.name===r.method;});
+    r.emission=r.qty*1000*(wc?wc.coeff:0.5);
+  } else if(cat==='trp'){
+    r.typeName=g('edit-typeName')||r.typeName;
+    r.plate=g('edit-plate')||r.plate;
+    r.from=g('edit-from')||r.from;
+    r.to=g('edit-to')||r.to;
+    r.dist=parseFloat(g('edit-dist'))||r.dist;
+    r.date=date||r.date;
+    r.grade=parseInt(g('edit-grade'))||r.grade;
+    r.emission=r.isPer?r.pcount*r.dist*2*r.coeff:r.dist*r.load*r.coeff;
+  } else if(cat==='per'){
+    r.cat=g('edit-cat')||r.cat;
+    r.n=parseFloat(g('edit-n'))||r.n;
+    r.h=parseFloat(g('edit-h'))||r.h;
+    r.site=r.n*r.h*(perCoeffDB.coeff||0.082);
+    r.emission=r.site;
+    r.date=date||r.date;
+    r.grade=parseInt(g('edit-grade'))||r.grade;
+  }
+
+  renderMap[cat]();
+  updateDash();
+  syncToSheets(cat,r);
+  syncSummaryToSheets();
+  closeModal();
+}
+
 function cMat(){const q=parseFloat(document.getElementById('I-mq').value)||0,c=parseFloat(document.getElementById('I-mco').value)||0;document.getElementById('MR').textContent=q*c>0?(q*c).toFixed(2):'—';}
 function addMat(){
   const id=document.getElementById('I-mc').value,qty=parseFloat(document.getElementById('I-mq').value),coeff=parseFloat(document.getElementById('I-mco').value);
@@ -1282,7 +1445,7 @@ function addMat(){
 function renderMT(){
   const tb=document.getElementById('MT');document.getElementById('MC').textContent=matData.length+' 筆';
   if(!matData.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr>';return;}
-  tb.innerHTML=matData.map((r,i)=>`<tr><td title="${r.name}">${r.name}</td><td>${r.qty.toLocaleString()}</td><td>${r.unit}</td><td>${r.coeff}</td><td>${r.emission.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'mat')}</td><td><button class="btn btn-sm btn-d" onclick="deleteRec('mat',${i})">刪除</button></td></tr>`).join('');
+  tb.innerHTML=matData.map((r,i)=>`<tr><td title="${r.name}">${r.name}</td><td>${r.qty.toLocaleString()}</td><td>${r.unit}</td><td>${r.coeff}</td><td>${r.emission.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'mat')}</td><td><button class="btn btn-sm" onclick="openEditModal('mat',${i})" style="margin-right:3px">✏</button><button class="btn btn-sm btn-d" onclick="deleteRec('mat',${i})">刪除</button></td></tr>`).join('');
 }
 
 // ══ Eng ══
@@ -1301,7 +1464,7 @@ function addEng(){
 function renderET(){
   const tb=document.getElementById('ET');
   if(!engData.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr>';return;}
-  tb.innerHTML=engData.map((r,i)=>`<tr><td>${r.name}</td><td>${r.qty.toLocaleString()}</td><td>${r.unit}</td><td>${r.coeff}</td><td>${r.emission.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'eng')}</td><td><button class="btn btn-sm btn-d" onclick="deleteRec('eng',${i})">刪除</button></td></tr>`).join('');
+  tb.innerHTML=engData.map((r,i)=>`<tr><td>${r.name}</td><td>${r.qty.toLocaleString()}</td><td>${r.unit}</td><td>${r.coeff}</td><td>${r.emission.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'eng')}</td><td><button class="btn btn-sm" onclick="openEditModal('eng',${i})" style="margin-right:3px">✏</button><button class="btn btn-sm btn-d" onclick="deleteRec('eng',${i})">刪除</button></td></tr>`).join('');
 }
 
 // ══ Wst ══
@@ -1319,7 +1482,7 @@ function addWst(){
 function renderWT(){
   const tb=document.getElementById('WT');
   if(!wstData.length){tb.innerHTML='<tr><td colspan="9" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr>';return;}
-  tb.innerHTML=wstData.map((r,i)=>`<tr><td>${r.type}</td><td>${r.qty}</td><td>${r.method}</td><td>${r.emission.toFixed(2)}</td><td title="${r.supp}">${r.supp}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'wst')}</td><td><button class="btn btn-sm btn-d" onclick="deleteRec('wst',${i})">刪</button></td></tr>`).join('');
+  tb.innerHTML=wstData.map((r,i)=>`<tr><td>${r.type}</td><td>${r.qty}</td><td>${r.method}</td><td>${r.emission.toFixed(2)}</td><td title="${r.supp}">${r.supp}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'wst')}</td><td><button class="btn btn-sm" onclick="openEditModal('wst',${i})" style="margin-right:3px">✏</button><button class="btn btn-sm btn-d" onclick="deleteRec('wst',${i})">刪</button></td></tr>`).join('');
 }
 
 // ══ Trp ══
@@ -1363,7 +1526,7 @@ function addTrp(){
 function renderTT(){
   const tb=document.getElementById('TT');document.getElementById('TC').textContent=trpData.length+' 筆';
   if(!trpData.length){tb.innerHTML='<tr><td colspan="11" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr>';return;}
-  tb.innerHTML=trpData.map((r,i)=>`<tr><td title="${r.typeName}">${r.typeName}</td><td>${r.plate}</td><td title="${r.vtypeName}">${r.vtypeName}</td><td title="${r.from}">${r.from}</td><td title="${r.to}">${r.to}</td><td>${r.dist}</td><td>${r.emission.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'trp')}</td><td><button class="btn btn-sm btn-d" onclick="deleteRec('trp',${i})">刪</button></td></tr>`).join('');
+  tb.innerHTML=trpData.map((r,i)=>`<tr><td title="${r.typeName}">${r.typeName}</td><td>${r.plate}</td><td title="${r.vtypeName}">${r.vtypeName}</td><td title="${r.from}">${r.from}</td><td title="${r.to}">${r.to}</td><td>${r.dist}</td><td>${r.emission.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'trp')}</td><td><button class="btn btn-sm" onclick="openEditModal('trp',${i})" style="margin-right:3px">✏</button><button class="btn btn-sm btn-d" onclick="deleteRec('trp',${i})">刪</button></td></tr>`).join('');
 }
 
 // ══ Per ══
@@ -1381,7 +1544,7 @@ function addPer(){
 function renderPT(){
   const tb=document.getElementById('PT');document.getElementById('PC').textContent=perData.length+' 筆';
   if(!perData.length){tb.innerHTML='<tr><td colspan="8" style="text-align:center;color:var(--hint);padding:14px">尚無記錄</td></tr>';return;}
-  tb.innerHTML=perData.map((r,i)=>`<tr><td>${r.cat}</td><td>${r.n}</td><td>${r.h}hr</td><td>${r.site.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'per')}</td><td><button class="btn btn-sm btn-d" onclick="deleteRec('per',${i})">刪除</button></td></tr>`).join('');
+  tb.innerHTML=perData.map((r,i)=>`<tr><td>${r.cat}</td><td>${r.n}</td><td>${r.h}hr</td><td>${r.site.toFixed(2)}</td><td>${r.date}</td><td><span class="tag ${GC[r.grade]}">${GT[r.grade]}</span></td><td>${renderFileBtn(r.files,i,'per')}</td><td><button class="btn btn-sm" onclick="openEditModal('per',${i})" style="margin-right:3px">✏</button><button class="btn btn-sm btn-d" onclick="deleteRec('per',${i})">刪除</button></td></tr>`).join('');
 }
 
 // ══ LC ══
@@ -1598,7 +1761,7 @@ async function runAI(cat,inp){
   panel.innerHTML=`<div class="ai-result-ttl"><div class="spin"></div> AI 辨識中，請稍候…</div>`;
   try{
     const base64=dataURL.split(',')[1];
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:file.type,data:base64}},{type:'text',text:AI_PROMPTS[cat]}]}]})});
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:getApiHeaders(),body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:file.type,data:base64}},{type:'text',text:AI_PROMPTS[cat]}]}]})});
     const data=await resp.json();
     const raw=data.content?.map(b=>b.text||'').join('').trim();
     const jm=raw.match(/\{[\s\S]*\}/);
