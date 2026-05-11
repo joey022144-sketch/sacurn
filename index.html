@@ -988,7 +988,7 @@ async function parseFromImage(inp){
   try{
     var resp = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
       body: JSON.stringify({
         model:'claude-sonnet-4-20250514',
         max_tokens:2000,
@@ -1023,7 +1023,7 @@ async function parseDialogue(){
   try{
     var resp = await fetch('https://api.anthropic.com/v1/messages',{
       method:'POST',
-      headers:{'Content-Type':'application/json'},
+      headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},
       body: JSON.stringify({
         model:'claude-sonnet-4-20250514',
         max_tokens:2000,
@@ -1598,7 +1598,7 @@ async function runAI(cat,inp){
   panel.innerHTML=`<div class="ai-result-ttl"><div class="spin"></div> AI 辨識中，請稍候…</div>`;
   try{
     const base64=dataURL.split(',')[1];
-    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:file.type,data:base64}},{type:'text',text:AI_PROMPTS[cat]}]}]})});
+    const resp=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json','anthropic-dangerous-direct-browser-access':'true'},body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:800,messages:[{role:'user',content:[{type:'image',source:{type:'base64',media_type:file.type,data:base64}},{type:'text',text:AI_PROMPTS[cat]}]}]})});
     const data=await resp.json();
     const raw=data.content?.map(b=>b.text||'').join('').trim();
     const jm=raw.match(/\{[\s\S]*\}/);
