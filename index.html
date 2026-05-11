@@ -207,6 +207,7 @@ tbody tr:hover td{background:var(--acc-dim)}
   <div class="sb-sec">主要功能</div>
   <button class="ni on" onclick="nav('dash',this)"><svg viewBox="0 0 16 16"><rect x="1" y="1" width="6" height="6" rx="1"/><rect x="9" y="1" width="6" height="6" rx="1"/><rect x="1" y="9" width="6" height="6" rx="1"/><rect x="9" y="9" width="6" height="6" rx="1"/></svg>儀表板</button>
   <button class="ni" onclick="nav('input',this)"><svg viewBox="0 0 16 16"><path d="M2 8h12M8 2v12" stroke-linecap="round"/></svg>資料輸入</button>
+  <button class="ni" onclick="nav('parse',this)"><svg viewBox="0 0 16 16"><path d="M2 4h12M2 8h8M2 12h10" stroke-linecap="round"/><circle cx="13" cy="12" r="2.5" fill="currentColor" stroke="none"/></svg>對話解析</button>
   <button class="ni" onclick="nav('lc',this)"><svg viewBox="0 0 16 16"><path d="M8 2a6 6 0 1 0 6 6" stroke-linecap="round"/><path d="M14 2v4h-4" stroke-linecap="round" stroke-linejoin="round"/></svg>生命週期計算</button>
   <button class="ni" onclick="nav('ev',this)"><svg viewBox="0 0 16 16"><path d="M3 2h8l2 2v10H3V2z"/><path d="M6 7h4M6 10h4M6 4.5h3" stroke-linecap="round"/></svg>佐證資料總覽</button>
   <button class="ni" onclick="nav('comp',this)"><svg viewBox="0 0 16 16"><path d="M8 2l1.5 4.5H14l-3.7 2.7 1.4 4.3L8 11l-3.7 2.5 1.4-4.3L2 6.5h4.5z"/></svg>合規檢核</button>
@@ -214,6 +215,8 @@ tbody tr:hover td{background:var(--acc-dim)}
   <button class="ni" onclick="nav('set-eng',this)"><svg viewBox="0 0 16 16"><path d="M8 2v3M8 11v3M3.2 4.7l2.1 2.1M10.7 11.2l2.1 2.1M2 8h3M11 8h3M3.2 11.2l2.1-2.1M10.7 4.7l2.1-2.1" stroke-linecap="round"/><circle cx="8" cy="8" r="2.5"/></svg>能源排放係數</button>
   <button class="ni" onclick="nav('set-mat',this)"><svg viewBox="0 0 16 16"><rect x="2" y="3" width="12" height="10" rx="1"/><path d="M5 3v10M11 3v10M2 8h12" stroke-linecap="round"/></svg>材料排放係數</button>
   <button class="ni" onclick="nav('set-vtype',this)"><svg viewBox="0 0 16 16"><rect x="1" y="6" width="10" height="5" rx="1.5"/><circle cx="4" cy="11" r="1.5"/><circle cx="9" cy="11" r="1.5"/><path d="M11 8.5h3.5l1 3H11V8.5z"/><circle cx="14" cy="11" r="1.5"/></svg>車輛類型管理</button>
+  <button class="ni" onclick="nav('set-wst',this)"><svg viewBox="0 0 16 16"><path d="M3 4h10M6 2h4M5 4v9a1 1 0 001 1h4a1 1 0 001-1V4" stroke-linecap="round" stroke-linejoin="round"/></svg>廢棄物處理係數</button>
+  <button class="ni" onclick="nav('set-per',this)"><svg viewBox="0 0 16 16"><circle cx="8" cy="5" r="2.5"/><path d="M3 14c0-3 2-5 5-5s5 2 5 5" stroke-linecap="round"/></svg>人員現場係數</button>
   <div class="sb-foot">ISO 14067 / 14064-1<br>CFP-PCR 建築物 V3.0</div>
 </div>
 
@@ -278,6 +281,10 @@ tbody tr:hover td{background:var(--acc-dim)}
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3v10M5 10l3 3 3-3" stroke-linecap="round" stroke-linejoin="round"/></svg>
         備份 JSON
       </button>
+      <button class="btn" onclick="loadFromSheets()" style="display:flex;align-items:center;gap:6px;border-color:var(--pur);color:var(--pur-t)">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 13V3M5 6l3-3 3 3" stroke-linecap="round" stroke-linejoin="round"/><path d="M2 13h12" stroke-linecap="round"/></svg>
+        從 Sheets 載入
+      </button>
       <label class="btn" style="cursor:pointer;display:flex;align-items:center;gap:6px;margin:0">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 13V3M5 6l3-3 3 3" stroke-linecap="round" stroke-linejoin="round"/></svg>
         匯入 JSON<input type="file" accept=".json" style="display:none" onchange="importJSON(this)">
@@ -295,6 +302,60 @@ tbody tr:hover td{background:var(--acc-dim)}
       <button id="gdrive-disconnect-btn" class="btn btn-sm btn-d" onclick="gdriveDisconnect()" style="display:none">✕ 中斷連結</button>
       <div id="gdrive-status" style="font-size:12px;color:var(--hint)">未連結 — 佐證存本機</div>
     </div>
+  </div>
+</div>
+
+<!-- ═══ PARSE ═══ -->
+<div class="pg" id="pg-parse">
+  <div class="alert al-pur" style="margin-bottom:12px">
+    📋 將廠商 LINE 訊息、日報截圖或任何工地對話貼入下方，AI 自動識別並填入對應欄位。
+  </div>
+
+  <!-- 輸入區 -->
+  <div class="card">
+    <div class="card-hd">
+      <div class="card-ttl">輸入對話內容</div>
+      <div style="display:flex;gap:8px">
+        <label class="btn btn-sm" style="cursor:pointer;display:flex;align-items:center;gap:5px;border-color:var(--pur);color:var(--pur-t)">
+          🖼 上傳截圖
+          <input type="file" id="parse-img-inp" accept="image/*" style="display:none" onchange="parseFromImage(this)">
+        </label>
+        <button class="btn btn-p btn-sm" onclick="parseDialogue()">🤖 AI 解析</button>
+      </div>
+    </div>
+    <div class="fg" style="margin-bottom:6px">
+      <textarea id="parse-text" rows="6" placeholder="貼上廠商 LINE 對話、工地日報或任何文字記錄...
+例如：日期：115年4月29日，粗工1工，時數8小時，木門框進料..." style="width:100%;padding:10px;font-size:13px;border:1px solid var(--bdr2);border-radius:6px;background:#141820;color:var(--txt);font-family:inherit;resize:vertical;outline:none;line-height:1.6"></textarea>
+    </div>
+    <div style="font-size:12px;color:var(--hint)">支援中文繁體、民國年（115年=2026年）、常見工地用語</div>
+  </div>
+
+  <!-- 解析中 -->
+  <div id="parse-loading" style="display:none" class="card">
+    <div style="display:flex;align-items:center;gap:10px;padding:8px 0">
+      <div class="spin" style="border-color:var(--pur-t)"></div>
+      <span style="color:var(--pur-t);font-size:13px">AI 解析中，請稍候…</span>
+    </div>
+  </div>
+
+  <!-- 解析結果 -->
+  <div id="parse-result" style="display:none">
+    <div class="card">
+      <div class="card-hd">
+        <div class="card-ttl">解析結果</div>
+        <div style="display:flex;gap:8px">
+          <button class="btn btn-p btn-sm" onclick="applyAllParsed()">✓ 全部新增</button>
+          <button class="btn btn-sm" onclick="clearParseResult()">✕ 清除</button>
+        </div>
+      </div>
+      <div id="parse-cards"></div>
+    </div>
+  </div>
+
+  <!-- 新增紀錄 log -->
+  <div id="parse-log" style="display:none" class="card">
+    <div class="card-hd"><div class="card-ttl">新增結果</div></div>
+    <div id="parse-log-content" style="font-size:13px;line-height:2"></div>
   </div>
 </div>
 
@@ -387,7 +448,7 @@ tbody tr:hover td{background:var(--acc-dim)}
       <div class="g3">
         <div class="fg"><label>廢棄物類型</label><select id="I-wt"><option value="concrete_w">混凝土廢棄物</option><option value="rebar_w">鋼筋廢棄物</option><option value="general">一般廢棄物</option><option value="recyclable">資源回收</option><option value="hazardous">有害廢棄物</option></select></div>
         <div class="fg"><label>產生量 (ton)</label><input type="number" id="I-wq" placeholder="0" oninput="cWst()"></div>
-        <div class="fg"><label>處理方式</label><select id="I-wm" onchange="cWst()"><option value="0.5">掩埋</option><option value="0.05">回收再利用</option><option value="0.3">焚化</option></select></div>
+        <div class="fg"><label>處理方式</label><select id="I-wm" onchange="cWst()"></select></div>
       </div>
       <div class="g3">
         <div class="fg"><label>清運供應商</label><input type="text" id="I-wsupp" placeholder="清運處理廠商名稱"></div>
@@ -463,7 +524,7 @@ tbody tr:hover td{background:var(--acc-dim)}
     <div class="card">
       <div class="card-hd"><div class="card-ttl">人員施工記錄 — E-2</div><span class="tag tb">現場碳排</span></div>
       <div class="alert al-b">人員通勤里程請至「運輸車輛」頁面，選擇「人員通勤」記錄。</div>
-      <div class="formula">現場碳排 = 人數 × 工時(hr) × 0.082 kgCO₂e</div>
+      <div class="formula" id="per-formula">現場碳排 = 人數 × 工時(hr) × 0.082 kgCO₂e/hr</div>
       <div class="g3">
         <div class="fg"><label>人員類別</label><select id="P-cat"><option>施工工人</option><option>工地工程師</option><option>專案管理</option><option>監工/品管</option><option>分包商人員</option><option>其他</option></select></div>
         <div class="fg"><label>人數（人）</label><input type="number" id="P-count" placeholder="0" oninput="cPer()"></div>
@@ -655,9 +716,51 @@ tbody tr:hover td{background:var(--acc-dim)}
   <div class="alert al-b">貨運參考：重型卡車 0.062、中型 0.080。人員參考：轎車 0.210、捷運 0.041。</div>
   <div class="tbl-wrap"><table>
     <colgroup><col style="width:26%"><col style="width:13%"><col style="width:17%"><col style="width:19%"><col style="width:25%"></colgroup>
-    <thead><tr><th>車輛名稱</th><th>類型</th><th>排放係數</th><th>單位</th><th>操作</th></tr></thead>
+    <thead><tr><th>車輛名稱</th><th>類型</th><th>排放係數</th><th>單位</th><th>來源</th><th>操作</th></tr></thead>
     <tbody id="VTYPE-tb"></tbody>
   </table></div>
+</div>
+
+<!-- ═══ SET-WST ═══ -->
+<div class="pg" id="pg-set-wst">
+  <div class="panel-hd">
+    <div><div class="panel-ttl">廢棄物處理係數</div><div class="panel-desc">各處理方式的排放係數（kgCO₂e/kg），修改後立即反映至廢棄物輸入頁。</div></div>
+    <button class="btn btn-p btn-sm" onclick="addWstCoeff()">+ 新增處理方式</button>
+  </div>
+  <div class="alert al-b">參考值：掩埋 0.5、回收再利用 0.05、焚化 0.3（kgCO₂e/kg）</div>
+  <div class="tbl-wrap"><table>
+    <colgroup><col style="width:30%"><col style="width:25%"><col style="width:20%"><col style="width:25%"></colgroup>
+    <thead><tr><th>處理方式名稱</th><th>係數(kgCO₂e/kg)</th><th>單位</th><th>來源</th><th>操作</th></tr></thead>
+    <tbody id="WST-COEFF-tb"></tbody>
+  </table></div>
+</div>
+
+<!-- ═══ SET-PER ═══ -->
+<div class="pg" id="pg-set-per">
+  <div class="panel-hd">
+    <div><div class="panel-ttl">人員現場係數</div><div class="panel-desc">工地現場人員活動的排放係數，修改後立即反映至人員輸入頁計算結果。</div></div>
+  </div>
+  <div class="alert al-b">預設值 0.082 kgCO₂e/hr，來源：<a href="https://www.ipcc.ch/report/ar5/wg1/" target="_blank" style="color:var(--acc-t)">IPCC AR5 第五次評估報告↗</a></div>
+  <div class="card">
+    <div class="g3">
+      <div class="fg"><label>人員現場係數 (kgCO₂e/hr)</label>
+        <input type="number" id="per-coeff-inp" value="0.082" step="0.001" min="0"
+          onchange="perCoeffDB.coeff=parseFloat(this.value)||0.082;updatePerFormula()">
+      </div>
+      <div class="fg"><label>資料來源</label>
+        <input type="text" id="per-coeff-src" value="IPCC"
+          onchange="perCoeffDB.src=this.value">
+      </div>
+      <div class="fg"><label>年度</label>
+        <input type="text" id="per-coeff-year" value="固定"
+          onchange="perCoeffDB.year=this.value">
+      </div>
+    </div>
+    <div class="cbox" style="margin-top:6px">
+      <div class="cbox-n" id="per-coeff-preview">0.082</div>
+      <div class="cbox-l">目前係數 kgCO₂e/hr ｜ 人數 × 工時 × 此係數 = 現場碳排</div>
+    </div>
+  </div>
 </div>
 
 </div></div></div>
@@ -668,58 +771,68 @@ tbody tr:hover td{background:var(--acc-dim)}
 // 共用資料庫 — 所有頁面共享同一份
 // ══════════════════════════════════════════════════
 let matDB=[
-  {id:'concrete',name:'混凝土',unit:'m³',coeff:237,src:'環境部',grade:2},
-  {id:'rebar',name:'鋼筋',unit:'kg',coeff:2.0,src:'環境部',grade:2},
-  {id:'steel',name:'鋼骨',unit:'kg',coeff:1.8,src:'環境部',grade:2},
-  {id:'formwork',name:'模板',unit:'m²',coeff:8.5,src:'環境部',grade:2},
-  {id:'tile',name:'磁磚/石材',unit:'m²',coeff:14.2,src:'環境部',grade:2},
-  {id:'alu',name:'鋁門窗',unit:'m²',coeff:62,src:'環境部',grade:2},
-  {id:'gypsum',name:'石膏板',unit:'m²',coeff:3.1,src:'環境部',grade:2},
-  {id:'cement',name:'水泥',unit:'kg',coeff:0.82,src:'環境部',grade:2},
-  {id:'glass',name:'玻璃',unit:'m²',coeff:28.5,src:'ecoinvent',grade:3},
-  {id:'paint',name:'油漆/塗料',unit:'kg',coeff:3.4,src:'ecoinvent',grade:3},
+  {id:'concrete',name:'混凝土',unit:'m³',coeff:237,src:'環境部',grade:2,link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},
+  {id:'rebar',name:'鋼筋',unit:'kg',coeff:2.0,src:'環境部',grade:2,link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},
+  {id:'steel',name:'鋼骨',unit:'kg',coeff:1.8,src:'環境部',grade:2,link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},
+  {id:'formwork',name:'模板',unit:'m²',coeff:8.5,src:'環境部',grade:2,link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},
+  {id:'tile',name:'磁磚/石材',unit:'m²',coeff:14.2,src:'環境部',grade:2,link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},
+  {id:'alu',name:'鋁門窗',unit:'m²',coeff:62,src:'環境部',grade:2,link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},
+  {id:'gypsum',name:'石膏板',unit:'m²',coeff:3.1,src:'環境部',grade:2,link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},
+  {id:'cement',name:'水泥',unit:'kg',coeff:0.82,src:'環境部',grade:2,link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},
+  {id:'glass',name:'玻璃',unit:'m²',coeff:28.5,src:'ecoinvent',grade:3,link:'https://ecoinvent.org'},
+  {id:'paint',name:'油漆/塗料',unit:'kg',coeff:3.4,src:'ecoinvent',grade:3,link:'https://ecoinvent.org'},
 ];
 
 // 能源係數（設定頁可修改，資料輸入頁讀取同一份）
 let engCoeffDB={
   fuel:[
-    {id:'diesel',name:'車用柴油',unit:'L',coeff:2.7060,src:'環境部',year:'113年度',isLive:false,icon:'🛢'},
-    {id:'gasoline',name:'車用汽油',unit:'L',coeff:2.2631,src:'環境部',year:'113年度',isLive:false,icon:'⛽'},
-    {id:'lpg',name:'液化石油氣（LPG）',unit:'L',coeff:1.6040,src:'環境部',year:'113年度',isLive:false,icon:'🔵'},
+    {id:'diesel',name:'車用柴油',unit:'L',coeff:2.7060,src:'環境部',year:'113年度',isLive:false,icon:'🛢',link:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx'},
+    {id:'gasoline',name:'車用汽油',unit:'L',coeff:2.2631,src:'環境部',year:'113年度',isLive:false,icon:'⛽',link:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx'},
+    {id:'lpg',name:'液化石油氣（LPG）',unit:'L',coeff:1.6040,src:'環境部',year:'113年度',isLive:false,icon:'🔵',link:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx'},
   ],
   elec:[
-    {id:'elec_tw',name:'台電電力',unit:'kWh',coeff:0.474,src:'經濟部能源署',year:'113年度',isLive:false,icon:'⚡'},
-    {id:'elec_green',name:'再生能源（綠電）',unit:'kWh',coeff:0.000,src:'—',year:'—',isLive:false,icon:'🌱'},
+    {id:'elec_tw',name:'台電電力',unit:'kWh',coeff:0.474,src:'經濟部能源署',year:'113年度',isLive:false,icon:'⚡',link:'https://www.moeaea.gov.tw/ecw/populace/content/ContentDesc.aspx?menu_id=26391'},
+    {id:'elec_green',name:'再生能源（綠電）',unit:'kWh',coeff:0.000,src:'—',year:'—',isLive:false,icon:'🌱',link:''},
   ],
   water:[
-    {id:'water',name:'自來水（含供水處理）',unit:'m³',coeff:0.195,src:'環境部',year:'最新',isLive:false,icon:'💧'},
+    {id:'water',name:'自來水（含供水處理）',unit:'m³',coeff:0.195,src:'環境部',year:'最新',isLive:false,icon:'💧',link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},
   ],
   refrig:[
-    {id:'r22',name:'R-22',unit:'kg',coeff:1810,src:'IPCC AR5',year:'固定',isLive:false,icon:'❄'},
-    {id:'r32',name:'R-32（低GWP）',unit:'kg',coeff:675,src:'IPCC AR5',year:'固定',isLive:false,icon:'❄'},
-    {id:'r134a',name:'R-134a',unit:'kg',coeff:1430,src:'IPCC AR5',year:'固定',isLive:false,icon:'❄'},
-    {id:'r410a',name:'R-410A',unit:'kg',coeff:2088,src:'IPCC AR5',year:'固定',isLive:false,icon:'❄'},
-    {id:'r404a',name:'R-404A',unit:'kg',coeff:3922,src:'IPCC AR5',year:'固定',isLive:false,icon:'❄'},
+    {id:'r22',name:'R-22',unit:'kg',coeff:1810,src:'IPCC AR5',year:'固定',isLive:false,icon:'❄',link:'https://www.ipcc.ch/report/ar5/wg1/'},
+    {id:'r32',name:'R-32（低GWP）',unit:'kg',coeff:675,src:'IPCC AR5',year:'固定',isLive:false,icon:'❄',link:'https://www.ipcc.ch/report/ar5/wg1/'},
+    {id:'r134a',name:'R-134a',unit:'kg',coeff:1430,src:'IPCC AR5',year:'固定',isLive:false,icon:'❄',link:'https://www.ipcc.ch/report/ar5/wg1/'},
+    {id:'r410a',name:'R-410A',unit:'kg',coeff:2088,src:'IPCC AR5',year:'固定',isLive:false,icon:'❄',link:'https://www.ipcc.ch/report/ar5/wg1/'},
+    {id:'r404a',name:'R-404A',unit:'kg',coeff:3922,src:'IPCC AR5',year:'固定',isLive:false,icon:'❄',link:'https://www.ipcc.ch/report/ar5/wg1/'},
   ]
 };
 
 // 車輛類型（設定頁可新增/修改，資料輸入頁讀取同一份）
 let vtypeDB=[
-  {id:'truck_10t',name:'重型卡車（10t+）',isPersonnel:false,coeff:0.062,unit:'kgCO₂e/ton-km'},
-  {id:'truck_5t',name:'中型卡車（5t）',isPersonnel:false,coeff:0.080,unit:'kgCO₂e/ton-km'},
-  {id:'pickup',name:'小貨車',isPersonnel:false,coeff:0.150,unit:'kgCO₂e/ton-km'},
-  {id:'mixer',name:'混凝土預拌車',isPersonnel:false,coeff:0.058,unit:'kgCO₂e/ton-km'},
-  {id:'sedan_gas',name:'自用轎車（汽油）',isPersonnel:true,coeff:0.210,unit:'kgCO₂e/km'},
-  {id:'sedan_ev',name:'電動車（EV）',isPersonnel:true,coeff:0.065,unit:'kgCO₂e/km'},
-  {id:'motorcycle',name:'機車',isPersonnel:true,coeff:0.110,unit:'kgCO₂e/km'},
-  {id:'bus',name:'公車',isPersonnel:true,coeff:0.089,unit:'kgCO₂e/km'},
-  {id:'mrt',name:'捷運/電車',isPersonnel:true,coeff:0.041,unit:'kgCO₂e/km'},
-  {id:'train',name:'火車/台鐵',isPersonnel:true,coeff:0.056,unit:'kgCO₂e/km'},
-  {id:'walk',name:'步行/腳踏車',isPersonnel:true,coeff:0.000,unit:'kgCO₂e/km'},
+  {id:'truck_10t',name:'重型卡車（10t+）',isPersonnel:false,coeff:0.062,unit:'kgCO₂e/ton-km',link:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx'},
+  {id:'truck_5t',name:'中型卡車（5t）',isPersonnel:false,coeff:0.080,unit:'kgCO₂e/ton-km',link:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx'},
+  {id:'pickup',name:'小貨車',isPersonnel:false,coeff:0.150,unit:'kgCO₂e/ton-km',link:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx'},
+  {id:'mixer',name:'混凝土預拌車',isPersonnel:false,coeff:0.058,unit:'kgCO₂e/ton-km',link:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx'},
+  {id:'sedan_gas',name:'自用轎車（汽油）',isPersonnel:true,coeff:0.210,unit:'kgCO₂e/km',link:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx'},
+  {id:'sedan_ev',name:'電動車（EV）',isPersonnel:true,coeff:0.065,unit:'kgCO₂e/km',link:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx'},
+  {id:'motorcycle',name:'機車',isPersonnel:true,coeff:0.110,unit:'kgCO₂e/km',link:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx'},
+  {id:'bus',name:'公車',isPersonnel:true,coeff:0.089,unit:'kgCO₂e/km',link:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx'},
+  {id:'mrt',name:'捷運/電車',isPersonnel:true,coeff:0.041,unit:'kgCO₂e/km',link:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx'},
+  {id:'train',name:'火車/台鐵',isPersonnel:true,coeff:0.056,unit:'kgCO₂e/km',link:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx'},
+  {id:'walk',name:'步行/腳踏車',isPersonnel:true,coeff:0.000,unit:'kgCO₂e/km',link:''},
 ];
 
 // 記錄資料
 let matData=[],engData=[],wstData=[],trpData=[],perData=[],dqiRecs=[];
+
+// 廢棄物處理係數
+var wstCoeffDB=[
+  {id:'landfill',name:'掩埋',coeff:0.5,unit:'kgCO₂e/kg',link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},
+  {id:'recycle',name:'回收再利用',coeff:0.05,unit:'kgCO₂e/kg',link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},
+  {id:'incinerate',name:'焚化',coeff:0.3,unit:'kgCO₂e/kg',link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},
+];
+
+// 人員現場係數
+var perCoeffDB={coeff:0.082,unit:'kgCO₂e/hr',src:'IPCC',year:'固定',link:'https://www.ipcc.ch/report/ar5/wg1/'};
 let pendingFiles={mat:[],eng:[],wst:[],trp:[],per:[]};
 let chkState={};let chartInst=null;
 let currentAIResult={};
@@ -777,13 +890,16 @@ function nav(p,btn){
   document.querySelectorAll('.pg').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.ni').forEach(x=>x.classList.remove('on'));
   document.getElementById('pg-'+p).classList.add('on');btn.classList.add('on');
-  const t={dash:'儀表板',input:'資料輸入',lc:'生命週期計算',ev:'佐證資料總覽',comp:'合規檢核','set-eng':'能源排放係數','set-mat':'材料排放係數','set-vtype':'車輛類型管理'};
+  const t={dash:'儀表板',input:'資料輸入',parse:'對話解析',lc:'生命週期計算',ev:'佐證資料總覽',comp:'合規檢核','set-eng':'能源排放係數','set-mat':'材料排放係數','set-vtype':'車輛類型管理','set-wst':'廢棄物處理係數','set-per':'人員現場係數'};
   document.getElementById('TBT').textContent=t[p]||p;
   if(p==='dash')updateDash();
   if(p==='input'){buildMatSel();buildEngSel();buildVtypeSel();}
+  if(p==='parse'){buildMatSel();buildEngSel();}
   if(p==='set-eng'){renderEngPanels();}
   if(p==='set-mat'){renderMatSet();}
   if(p==='set-vtype'){renderVtypeSet();}
+  if(p==='set-wst'){renderWstCoeffSet();}
+  if(p==='set-per'){renderPerCoeffSet();}
   if(p==='ev'){renderEvSummary();renderChecklist();}
   if(p==='comp'){updateComp();renderUCTable();}
   if(p==='lc'){syncElecCoeffToLC();}
@@ -832,6 +948,326 @@ function syncElecCoeffToLC(){
 
 // ══ Mat ══
 function applyMC(){const m=matDB.find(x=>x.id===document.getElementById('I-mc').value);if(m){document.getElementById('I-mco').value=m.coeff;document.getElementById('I-mu').value=m.unit;}cMat();}
+
+// ══════════════════════════════════════════════════
+// 對話解析功能
+// ══════════════════════════════════════════════════
+
+var parsedItems = []; // 儲存解析結果
+
+// 民國年轉西元
+function rocToAD(text){
+  return text.replace(/(\d{2,3})年(\d{1,2})月(\d{1,2})日/g, function(m, y, mo, d){
+    var ad = parseInt(y) + 1911;
+    return ad+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+  }).replace(/(\d{2,3})\/(\d{1,2})\/(\d{1,2})/g, function(m, y, mo, d){
+    var ad = parseInt(y) + 1911;
+    return ad+'-'+String(mo).padStart(2,'0')+'-'+String(d).padStart(2,'0');
+  });
+}
+
+// 從圖片 OCR + 解析
+async function parseFromImage(inp){
+  var file = inp.files[0];
+  if(!file) return;
+  inp.value = '';
+
+  // 讀取 dataURL
+  var dataURL = await new Promise(function(res){
+    var reader = new FileReader();
+    reader.onload = function(e){ res(e.target.result); };
+    reader.readAsDataURL(file);
+  });
+
+  var base64 = dataURL.split(',')[1];
+
+  document.getElementById('parse-loading').style.display='block';
+  document.getElementById('parse-result').style.display='none';
+  document.getElementById('parse-log').style.display='none';
+
+  try{
+    var resp = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:2000,
+        messages:[{
+          role:'user',
+          content:[
+            {type:'image',source:{type:'base64',media_type:file.type,data:base64}},
+            {type:'text',text:PARSE_PROMPT}
+          ]
+        }]
+      })
+    });
+    var data = await resp.json();
+    var text = (data.content||[]).map(function(b){return b.text||'';}).join('');
+    document.getElementById('parse-text').value = '（圖片內容已識別）';
+    processParsedJSON(text);
+  }catch(e){
+    document.getElementById('parse-loading').style.display='none';
+    alert('解析失敗：'+e.message);
+  }
+}
+
+// 從文字解析
+async function parseDialogue(){
+  var text = document.getElementById('parse-text').value.trim();
+  if(!text){ alert('請先輸入對話內容'); return; }
+
+  document.getElementById('parse-loading').style.display='block';
+  document.getElementById('parse-result').style.display='none';
+  document.getElementById('parse-log').style.display='none';
+
+  try{
+    var resp = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model:'claude-sonnet-4-20250514',
+        max_tokens:2000,
+        messages:[{role:'user',content:PARSE_PROMPT+'\n\n以下是對話內容：\n'+text}]
+      })
+    });
+    var data = await resp.json();
+    var result = (data.content||[]).map(function(b){return b.text||'';}).join('');
+    processParsedJSON(result);
+  }catch(e){
+    document.getElementById('parse-loading').style.display='none';
+    alert('解析失敗：'+e.message);
+  }
+}
+
+var PARSE_PROMPT = '你是建築工地碳足跡盤查助理。分析以下工地對話或日報，識別出可填入碳足跡記錄的資訊。\n'
+  +'民國年換算：民國年+1911=西元年（例：115年=2026年）。\n'
+  +'請以純 JSON 格式回應（不含說明、不含markdown），格式如下：\n'
+  +'{\n'
+  +'  "date": "YYYY-MM-DD（若無法判斷則留空）",\n'
+  +'  "summary": "這段對話的簡短摘要",\n'
+  +'  "records": [\n'
+  +'    {\n'
+  +'      "type": "mat|eng|wst|trp|per（對應材料|能源|廢棄物|運輸|人員）",\n'
+  +'      "fields": {\n'
+  +'        "（對應欄位名稱）": "值"\n'
+  +'      },\n'
+  +'      "missing": ["缺少的必要欄位"],\n'
+  +'      "confidence": "high|medium|low"\n'
+  +'    }\n'
+  +'  ]\n'
+  +'}\n\n'
+  +'各類型的 fields 格式：\n'
+  +'mat: name（材料名稱）, qty（數量）, unit（單位）, sup（供應商）\n'
+  +'eng: energy_type（diesel/gasoline/elec_tw/lpg/water）, qty（消耗量）, unit\n'
+  +'wst: waste_type（廢棄物類型）, qty（公噸）, method（掩埋/回收/焚化）, supp（清運商）\n'
+  +'trp: purpose（材料運輸/人員通勤/機具運輸）, vehicle（車輛類型）, plate（車牌）, from（出發地）, to（目的地）, dist（距離km）, pcount（人數）\n'
+  +'per: category（人員類別如粗工/工程師）, count（人數）, hours（工時小時）\n'
+  +'日期統一填入 date 欄位（所有記錄共用）。';
+
+// 處理 AI 回傳的 JSON
+function processParsedJSON(text){
+  document.getElementById('parse-loading').style.display='none';
+  try{
+    var jsonMatch = text.match(/\{[\s\S]*\}/);
+    if(!jsonMatch) throw new Error('無法解析 AI 回傳格式');
+    var parsed = JSON.parse(jsonMatch[0]);
+    parsedItems = parsed.records || [];
+    var date = parsed.date || '';
+
+    // 補上日期到每筆記錄
+    parsedItems.forEach(function(r){ r._date = date; });
+
+    renderParseCards(parsed.summary, date);
+  }catch(e){
+    alert('解析結果格式有誤：'+e.message+'\n\n原始回應：'+text.substring(0,200));
+  }
+}
+
+// 渲染解析結果卡片
+function renderParseCards(summary, date){
+  var container = document.getElementById('parse-cards');
+  var result = document.getElementById('parse-result');
+
+  var GN = {mat:'🧱 工程材料',eng:'⚡ 能源消耗',wst:'🗑 廢棄物',trp:'🚚 運輸車輛',per:'👷 人員現場'};
+  var CC = {mat:'var(--acc)',eng:'var(--grn)',wst:'var(--amb)',trp:'var(--pur)',per:'var(--red)'};
+
+  var html = '';
+  if(summary){
+    html += '<div class="alert al-b" style="margin-bottom:12px">📋 '+summary+(date?' ｜ 日期：'+date:'')+'</div>';
+  }
+
+  if(!parsedItems.length){
+    html += '<div style="color:var(--hint);font-size:13px;padding:12px">未識別到可填入的記錄。</div>';
+  }
+
+  parsedItems.forEach(function(r, idx){
+    var typeName = GN[r.type]||r.type;
+    var color = CC[r.type]||'var(--acc)';
+    var conf = r.confidence==='high'?'tg':r.confidence==='medium'?'ta':'tr';
+    var confText = r.confidence==='high'?'高信心':r.confidence==='medium'?'中信心':'低信心，請確認';
+    var fields = r.fields||{};
+    var missing = r.missing||[];
+
+    html += '<div style="background:#141820;border:1px solid var(--bdr);border-radius:8px;padding:12px 14px;margin-bottom:10px">';
+    html += '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">';
+    html += '<div style="display:flex;align-items:center;gap:8px">';
+    html += '<div style="width:10px;height:10px;border-radius:50%;background:'+color+'"></div>';
+    html += '<span style="font-size:13px;font-weight:500;color:var(--txt)">'+typeName+'</span>';
+    html += '<span class="tag '+conf+'" style="font-size:10px">'+confText+'</span>';
+    html += '</div>';
+    html += '<div style="display:flex;gap:6px">';
+    html += '<button class="btn btn-p btn-sm" onclick="applySingleParsed('+idx+')">✓ 新增</button>';
+    html += '<button class="btn btn-sm btn-d" onclick="removeParsedItem('+idx+')">✕</button>';
+    html += '</div></div>';
+
+    // 顯示識別的欄位
+    html += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:8px">';
+    Object.keys(fields).forEach(function(k){
+      var labels = {name:'材料名稱',qty:'數量',unit:'單位',sup:'供應商',energy_type:'能源類型',waste_type:'廢棄物類型',method:'處理方式',supp:'清運商',purpose:'用途',vehicle:'車輛',plate:'車牌',from:'出發地',to:'目的地',dist:'距離(km)',pcount:'人數',category:'人員類別',count:'人數',hours:'工時(hr)'};
+      var label = labels[k]||k;
+      html += '<div style="background:var(--card);border:1px solid var(--bdr2);border-radius:5px;padding:6px 9px">';
+      html += '<div style="font-size:10px;color:var(--hint);text-transform:uppercase;margin-bottom:2px">'+label+'</div>';
+      html += '<div style="font-size:13px;color:var(--txt)">'+fields[k]+'</div>';
+      html += '</div>';
+    });
+    if(r._date){
+      html += '<div style="background:var(--card);border:1px solid var(--bdr2);border-radius:5px;padding:6px 9px">';
+      html += '<div style="font-size:10px;color:var(--hint);text-transform:uppercase;margin-bottom:2px">日期</div>';
+      html += '<div style="font-size:13px;color:var(--txt)">'+r._date+'</div>';
+      html += '</div>';
+    }
+    html += '</div>';
+
+    // 缺少的欄位
+    if(missing.length){
+      html += '<div style="font-size:11px;color:var(--amb-t)">⚠ 需補充：'+missing.join('、')+'</div>';
+    }
+
+    html += '</div>';
+  });
+
+  container.innerHTML = html;
+  result.style.display = 'block';
+}
+
+// 新增單筆解析結果
+function applySingleParsed(idx){
+  var r = parsedItems[idx];
+  if(!r) return;
+  var added = addParsedRecord(r);
+  if(added){
+    parsedItems.splice(idx, 1);
+    // 重新渲染
+    var summary = document.querySelector('#parse-cards .alert') ? '' : '';
+    renderParseCards('', parsedItems[0]?parsedItems[0]._date:'');
+    showParseLog('✅ 已新增 1 筆 '+(({mat:'工程材料',eng:'能源消耗',wst:'廢棄物',trp:'運輸車輛',per:'人員現場'})[r.type]||r.type)+' 記錄');
+  }
+}
+
+// 全部新增
+function applyAllParsed(){
+  var count = 0;
+  var types = [];
+  parsedItems.forEach(function(r){
+    if(addParsedRecord(r)){
+      count++;
+      var tname = {mat:'工程材料',eng:'能源消耗',wst:'廢棄物',trp:'運輸車輛',per:'人員現場'}[r.type]||r.type;
+      if(types.indexOf(tname)<0) types.push(tname);
+    }
+  });
+  parsedItems = [];
+  document.getElementById('parse-result').style.display='none';
+  showParseLog('✅ 共新增 '+count+' 筆記錄（'+types.join('、')+'）');
+}
+
+// 把解析結果轉成記錄並新增
+function addParsedRecord(r){
+  var f = r.fields||{};
+  var date = r._date||new Date().toISOString().split('T')[0];
+  var GN = {1:'一級',2:'二級',3:'三級'};
+
+  try{
+    if(r.type==='mat'){
+      var matId = ''; var matCoeff = 0; var matUnit = f.unit||'kg';
+      // 嘗試匹配材料DB
+      matDB.forEach(function(m){
+        if(f.name && f.name.includes(m.name.substring(0,2))){ matId=m.id; matCoeff=m.coeff; matUnit=m.unit; }
+      });
+      var qty = parseFloat(f.qty)||0;
+      var rec = {name:f.name||'未知材料',qty:qty,unit:matUnit,coeff:matCoeff,sup:f.sup||'—',grade:2,date:date.replace(/-/g,'/'),emission:qty*matCoeff,files:[]};
+      matData.push(rec);
+      renderMT(); updateDash();
+      syncToSheets('mat',rec); syncSummaryToSheets();
+      return true;
+    }
+    if(r.type==='eng'){
+      var engObj = getAllEng().find(function(e){ return e.id===f.energy_type; });
+      var qty2 = parseFloat(f.qty)||0;
+      var coeff2 = engObj?engObj.coeff:0;
+      var rec2 = {name:engObj?engObj.name:f.energy_type||'未知能源',unit:f.unit||(engObj?engObj.unit:'L'),qty:qty2,coeff:coeff2,grade:2,date:date.replace(/-/g,'/'),emission:qty2*coeff2,files:[]};
+      engData.push(rec2);
+      renderET(); updateDash();
+      syncToSheets('eng',rec2); syncSummaryToSheets();
+      return true;
+    }
+    if(r.type==='wst'){
+      var wstCoeff2 = wstCoeffDB.find(function(w){return f.method&&f.method.includes(w.name.substring(0,1));});
+      var c2 = wstCoeff2?wstCoeff2.coeff:0.5;
+      var qty3 = parseFloat(f.qty)||0;
+      var rec3 = {type:f.waste_type||'一般廢棄物',qty:qty3,method:wstCoeff2?wstCoeff2.name:'掩埋',supp:f.supp||'—',grade:2,date:date.replace(/-/g,'/'),emission:qty3*1000*c2,files:[]};
+      wstData.push(rec3);
+      renderWT(); updateDash();
+      syncToSheets('wst',rec3); syncSummaryToSheets();
+      return true;
+    }
+    if(r.type==='trp'){
+      var isPer2 = f.purpose&&(f.purpose.includes('通勤')||f.purpose.includes('人員'));
+      var vt2 = vtypeDB.find(function(v){return f.vehicle&&v.name.includes(f.vehicle.substring(0,2));});
+      var coeff3 = vt2?vt2.coeff:(isPer2?0.110:0.062);
+      var dist2 = parseFloat(f.dist)||0;
+      var pcount2 = parseFloat(f.pcount)||1;
+      var load2 = parseFloat(f.load)||0;
+      var em2 = isPer2?pcount2*dist2*2*coeff3:dist2*load2*coeff3;
+      var rec4 = {typeName:f.purpose||'材料運輸',plate:f.plate||'—',vtypeName:vt2?vt2.name:f.vehicle||'—',from:f.from||'—',to:f.to||'—',dist:dist2,trips:1,coeff:coeff3,load:load2,pcount:pcount2,isPer:isPer2,grade:2,date:date.replace(/-/g,'/'),emission:em2,files:[]};
+      trpData.push(rec4);
+      renderTT(); updateDash();
+      syncToSheets('trp',rec4); syncSummaryToSheets();
+      return true;
+    }
+    if(r.type==='per'){
+      var n2 = parseFloat(f.count)||1;
+      var h2 = parseFloat(f.hours)||8;
+      var site2 = n2*h2*(perCoeffDB.coeff||0.082);
+      var rec5 = {cat:f.category||'施工工人',n:n2,h:h2,site:site2,emission:site2,grade:2,date:date.replace(/-/g,'/'),files:[]};
+      perData.push(rec5);
+      renderPT(); updateDash();
+      syncToSheets('per',rec5); syncSummaryToSheets();
+      return true;
+    }
+  }catch(e){ console.warn('addParsedRecord error:',e); }
+  return false;
+}
+
+function removeParsedItem(idx){
+  parsedItems.splice(idx,1);
+  if(!parsedItems.length){ document.getElementById('parse-result').style.display='none'; return; }
+  renderParseCards('',parsedItems[0]?parsedItems[0]._date:'');
+}
+
+function clearParseResult(){
+  parsedItems=[];
+  document.getElementById('parse-result').style.display='none';
+  document.getElementById('parse-log').style.display='none';
+  document.getElementById('parse-text').value='';
+}
+
+function showParseLog(msg){
+  var log = document.getElementById('parse-log');
+  var content = document.getElementById('parse-log-content');
+  log.style.display='block';
+  content.innerHTML += '<div>'+msg+'</div>';
+}
+
 function cMat(){const q=parseFloat(document.getElementById('I-mq').value)||0,c=parseFloat(document.getElementById('I-mco').value)||0;document.getElementById('MR').textContent=q*c>0?(q*c).toFixed(2):'—';}
 function addMat(){
   const id=document.getElementById('I-mc').value,qty=parseFloat(document.getElementById('I-mq').value),coeff=parseFloat(document.getElementById('I-mco').value);
@@ -873,7 +1309,7 @@ function cWst(){const q=parseFloat(document.getElementById('I-wq').value)||0,c=p
 function addWst(){
   const type=document.getElementById('I-wt').value,qty=parseFloat(document.getElementById('I-wq').value),c=parseFloat(document.getElementById('I-wm').value)||0.5;
   if(!qty){alert('請填寫數量');return;}
-  const mN={'0.5':'掩埋','0.05':'回收','0.3':'焚化'},tN={concrete_w:'混凝土廢棄',rebar_w:'鋼筋廢棄',general:'一般廢棄物',recyclable:'資源回收',hazardous:'有害廢棄物'};
+  const mN={}; wstCoeffDB.forEach(function(w){mN[String(w.coeff)]=w.name;});const tN={concrete_w:'混凝土廢棄',rebar_w:'鋼筋廢棄',general:'一般廢棄物',recyclable:'資源回收',hazardous:'有害廢棄物'};
   var wstRec={type:tN[type],qty,method:mN[String(c)],supp:document.getElementById('I-wsupp').value||'—',grade:document.getElementById('I-wg').value,date:getDate('wst-dr'),emission:qty*1000*c,files:[...pendingFiles.wst]};
   wstData.push(wstRec);
   pendingFiles.wst=[];renderChips('wst');renderWT();updateDash();
@@ -931,11 +1367,11 @@ function renderTT(){
 }
 
 // ══ Per ══
-function cPer(){const n=parseFloat(document.getElementById('P-count').value)||0,h=parseFloat(document.getElementById('P-hrs').value)||0;const s=n*h*0.082;document.getElementById('PR').textContent=s>0?s.toFixed(2):'—';}
+function cPer(){const n=parseFloat(document.getElementById('P-count').value)||0,h=parseFloat(document.getElementById('P-hrs').value)||0;const s=n*h*(perCoeffDB.coeff||0.082);document.getElementById('PR').textContent=s>0?s.toFixed(2):'—';}
 function addPer(){
   const catEl=document.getElementById('P-cat'),n=parseFloat(document.getElementById('P-count').value),h=parseFloat(document.getElementById('P-hrs').value)||8;
   if(!n){alert('請填寫人數');return;}
-  const site=n*h*0.082;
+  const site=n*h*(perCoeffDB.coeff||0.082);
   var perRec={cat:catEl.options[catEl.selectedIndex].text,n,h,site,emission:site,grade:document.getElementById('P-grade').value,date:getDate('per-dr'),files:[...pendingFiles.per]};
   perData.push(perRec);
   pendingFiles.per=[];renderChips('per');renderPT();updateDash();
@@ -1430,7 +1866,7 @@ function renderEngGroup(containerId,group,unitLabel){
       <div class="eng-icon" style="background:${group==='fuel'?'#2a1c05':group==='elec'?'#1a3a5c':group==='water'?'#0a2b20':'#1a1840'}">${e.icon||'◎'}</div>
       <div class="eng-info">
         <div class="eng-name">${e.name}</div>
-        <div class="eng-src">來源：${e.src}${e.year&&e.year!=='固定'?`　<span style="color:var(--acc-t)">${e.year}</span>`:''}</div>
+        <div class="eng-src">來源：${e.link?`<a href="${e.link}" target="_blank" style="color:var(--acc-t);text-decoration:none">${e.src}↗</a>`:e.src}${e.year&&e.year!=='固定'?`　<span style="color:var(--acc-t)">${e.year}</span>`:''}</div>
       </div>
       <div class="eng-right">
         <span class="${e.isLive?'live-tag':'manual-tag'}">${e.isLive?'🟢 API即時':'內建備用'}</span>
@@ -1451,7 +1887,7 @@ function renderMatSet(){
       ${UNITS.map(u=>`<option ${m.unit===u?'selected':''}>${u}</option>`).join('')}
     </select></td>
     <td><input type="number" class="coeff-edit" value="${m.coeff}" step="0.0001" min="0" onchange="matDB[${i}].coeff=parseFloat(this.value)||0;buildMatSel()"></td>
-    <td><input class="inline-edit" value="${m.src}" onchange="matDB[${i}].src=this.value;renderMatSet()" style="color:var(--muted);font-size:12px"></td>
+    <td>${m.link?`<a href="${m.link}" target="_blank" style="color:var(--acc-t);font-size:12px;text-decoration:none">${m.src}↗</a>`:`<span style="color:var(--muted);font-size:12px">${m.src}</span>`}</td>
     <td><select onchange="matDB[${i}].grade=parseInt(this.value)" style="border:1px solid var(--bdr2);border-radius:5px;background:#141820;font-size:12px;padding:4px 5px;width:100%;color:var(--txt)">
       <option value="1" ${m.grade===1?'selected':''}>一級</option><option value="2" ${m.grade===2?'selected':''}>二級</option><option value="3" ${m.grade===3?'selected':''}>三級</option>
     </select></td>
@@ -1460,6 +1896,56 @@ function renderMatSet(){
       <button class="btn btn-sm btn-d" onclick="if(confirm('確定刪除？')){matDB.splice(${i},1);renderMatSet();buildMatSel()}">刪除</button>
     </div></td>
   </tr>`).join('');
+}
+
+
+// ══ 廢棄物係數設定 ══
+function buildWstSelect(){
+  var s=document.getElementById('I-wm');
+  if(!s)return;
+  var cur=s.value;
+  s.innerHTML=wstCoeffDB.map(function(w){
+    return '<option value="'+w.coeff+'"'+(String(w.coeff)===String(cur)?' selected':'')+'>'+w.name+'</option>';
+  }).join('');
+}
+
+function renderWstCoeffSet(){
+  var tb=document.getElementById('WST-COEFF-tb');
+  if(!tb)return;
+  tb.innerHTML=wstCoeffDB.map(function(w,i){
+    return '<tr>'
+      +'<td><input class="inline-edit" value="'+w.name+'" onchange="wstCoeffDB['+i+'].name=this.value;buildWstSelect()" style="font-weight:500"></td>'
+      +'<td><input type="number" class="coeff-edit" value="'+w.coeff+'" step="0.001" min="0" onchange="wstCoeffDB['+i+'].coeff=parseFloat(this.value)||0;buildWstSelect()"></td>'
+      +'<td style="font-size:11px;color:var(--muted)">kgCO₂e/kg</td>'
+      +'<td>'+(w.link?'<a href="'+w.link+'" target="_blank" style="color:var(--acc-t);font-size:11px;text-decoration:none">來源↗</a>':'<span style="color:var(--hint)">—</span>')+'</td>'
+      +'<td><button class="btn btn-sm btn-d" onclick="if(confirm(&quot;確定刪除？&quot;)){wstCoeffDB.splice('+i+',1);renderWstCoeffSet();buildWstSelect()}">刪除</button></td>'
+      +'</tr>';
+  }).join('');
+}
+
+function addWstCoeff(){
+  wstCoeffDB.push({id:'w'+Date.now(),name:'新處理方式',coeff:0.1,unit:'kgCO₂e/kg'});
+  renderWstCoeffSet();buildWstSelect();
+}
+
+// ══ 人員係數設定 ══
+function renderPerCoeffSet(){
+  var inp=document.getElementById('per-coeff-inp');
+  var src=document.getElementById('per-coeff-src');
+  var yr=document.getElementById('per-coeff-year');
+  var prev=document.getElementById('per-coeff-preview');
+  if(inp)inp.value=perCoeffDB.coeff||0.082;
+  if(src)src.value=perCoeffDB.src||'IPCC';
+  if(yr)yr.value=perCoeffDB.year||'固定';
+  if(prev)prev.textContent=perCoeffDB.coeff||0.082;
+}
+
+function updatePerFormula(){
+  var f=document.getElementById('per-formula');
+  var p=document.getElementById('per-coeff-preview');
+  var c=perCoeffDB.coeff||0.082;
+  if(f)f.textContent='現場碳排 = 人數 × 工時(hr) × '+c+' kgCO₂e/hr';
+  if(p)p.textContent=c;
 }
 
 function renderVtypeSet(){
@@ -1475,6 +1961,7 @@ function renderVtypeSet(){
     </select></td>
     <td><input type="number" class="coeff-edit" value="${v.coeff}" step="0.001" min="0" onchange="vtypeDB[${i}].coeff=parseFloat(this.value)||0;buildVtypeSel()"></td>
     <td style="font-size:11px;color:var(--muted)">${v.unit}</td>
+    <td>${v.link?`<a href="${v.link}" target="_blank" style="color:var(--acc-t);font-size:11px;text-decoration:none">來源↗</a>`:"<span style=\"color:var(--hint)\">—</span>"}</td>
     <td><div style="display:flex;gap:5px">
       <button class="btn btn-sm" onclick="vtypeDB.push({...vtypeDB[${i}],id:'v'+Date.now(),name:vtypeDB[${i}].name+' (副本)'});renderVtypeSet();buildVtypeSel()">複製</button>
       <button class="btn btn-sm btn-d" onclick="if(confirm('確定刪除？')){vtypeDB.splice(${i},1);renderVtypeSet();buildVtypeSel()}">刪除</button>
@@ -1546,7 +2033,7 @@ function updateDash(){
 // ══ Init ══
 var SKEY='sacurn_v3';  // 必須在 loadFromStorage 前宣告
 ['mat-dr','eng-dr','wst-dr','trp-dr','per-dr'].forEach(id=>makeDR(id));
-buildMatSel();buildEngSel();buildVtypeSel();syncElecCoeffToLC();
+buildMatSel();buildEngSel();buildVtypeSel();buildWstSelect();syncElecCoeffToLC();
 // 先從 localStorage 還原，成功就不跑空 updateDash
 if(!loadFromStorage()){updateDash();}
 
@@ -1586,11 +2073,27 @@ function loadFromStorage(){
     function load(arr,src){if(src&&src.length){arr.splice(0);src.forEach(function(x){arr.push(x);});}}
     load(matData,s.matData);load(engData,s.engData);load(wstData,s.wstData);
     load(trpData,s.trpData);load(perData,s.perData);
-    if(s.matDB&&s.matDB.length){matDB.splice(0);s.matDB.forEach(function(x){matDB.push(x);});}
-    if(s.vtypeDB&&s.vtypeDB.length){vtypeDB.splice(0);s.vtypeDB.forEach(function(x){vtypeDB.push(x);});}
+    if(s.matDB&&s.matDB.length){
+      matDB.splice(0);
+      s.matDB.forEach(function(x){
+        // 從預設值補上 link（舊版備份沒有 link 欄位）
+        var def=([{id:'concrete',link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},{id:'rebar',link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},{id:'steel',link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},{id:'formwork',link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},{id:'tile',link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},{id:'alu',link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},{id:'gypsum',link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},{id:'cement',link:'https://cfp.moenv.gov.tw/WebPage/Index.aspx'},{id:'glass',link:'https://ecoinvent.org'},{id:'paint',link:'https://ecoinvent.org'}]).find(function(d){return d.id===x.id;});
+        if(!x.link&&def)x.link=def.link;
+        matDB.push(x);
+      });
+    }
+    if(s.vtypeDB&&s.vtypeDB.length){
+      vtypeDB.splice(0);
+      var vtDef={truck_10t:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx',truck_5t:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx',pickup:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx',mixer:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx',sedan_gas:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx',sedan_ev:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx',motorcycle:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx',bus:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx',mrt:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx',train:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx',walk:''};
+      s.vtypeDB.forEach(function(x){if(!x.link&&vtDef[x.id])x.link=vtDef[x.id];vtypeDB.push(x);});
+    }
     if(s.engCoeffDB){
+      var engDef={diesel:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx',gasoline:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx',lpg:'https://ghgregistry.moenv.gov.tw/epa_ghg/Accession/Accession.aspx',elec_tw:'https://www.moeaea.gov.tw/ecw/populace/content/ContentDesc.aspx?menu_id=26391',elec_green:'',water:'https://cfp.moenv.gov.tw/WebPage/Index.aspx',r22:'https://www.ipcc.ch/report/ar5/wg1/',r32:'https://www.ipcc.ch/report/ar5/wg1/',r134a:'https://www.ipcc.ch/report/ar5/wg1/',r410a:'https://www.ipcc.ch/report/ar5/wg1/',r404a:'https://www.ipcc.ch/report/ar5/wg1/'};
       Object.keys(s.engCoeffDB).forEach(function(g){
-        if(engCoeffDB[g]){engCoeffDB[g].splice(0);s.engCoeffDB[g].forEach(function(x){engCoeffDB[g].push(x);});}
+        if(engCoeffDB[g]){
+          engCoeffDB[g].splice(0);
+          s.engCoeffDB[g].forEach(function(x){if(!x.link&&engDef[x.id])x.link=engDef[x.id];engCoeffDB[g].push(x);});
+        }
       });
     }
     if(s.chkState)Object.assign(chkState,s.chkState);
@@ -2196,6 +2699,114 @@ async function sheetsClearData(sheetName){
 }
 
 // 全量同步所有 localStorage 資料到 Sheets（先清空再寫入）
+
+// ══ 從 Google Sheets 載入資料 ══
+async function loadFromSheets(){
+  if(!gdriveToken){
+    alert('請先連結 Google Drive');
+    return;
+  }
+  var btn = document.getElementById('load-sheets-btn');
+  var status = document.getElementById('storage-status');
+  if(status) status.textContent='⏳ 從 Sheets 載入中...';
+
+  try{
+    var GN={'一級':1,'二級':2,'三級':3};
+
+    // 讀取各工作表資料
+    async function readSheet(sheetName){
+      var range = encodeURIComponent(sheetName+'!A2:Z10000');
+      var resp = await fetch(
+        'https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+range+'?valueRenderOption=UNFORMATTED_VALUE',
+        {headers:{Authorization:'Bearer '+gdriveToken}}
+      );
+      var data = await resp.json();
+      return data.values || [];
+    }
+
+    // 清空現有資料
+    matData.splice(0);engData.splice(0);wstData.splice(0);trpData.splice(0);perData.splice(0);
+
+    // ── 工程材料 ──
+    // 欄位：記錄ID,材料名稱,數量,單位,係數,排放量,供應商,日期,等級,佐證,建立時間
+    var matRows = await readSheet('工程材料');
+    matRows.forEach(function(r){
+      if(!r[1]) return;
+      matData.push({
+        name:String(r[1]||''),qty:parseFloat(r[2])||0,unit:String(r[3]||''),
+        coeff:parseFloat(r[4])||0,emission:parseFloat(r[5])||0,
+        sup:String(r[6]||''),date:String(r[7]||''),
+        grade:GN[r[8]]||2,files:[],_sheetRow:null
+      });
+    });
+
+    // ── 能源消耗 ──
+    // 欄位：記錄ID,名稱,消耗量,單位,係數,排放量,日期,等級
+    var engRows = await readSheet('能源消耗');
+    engRows.forEach(function(r){
+      if(!r[1]) return;
+      engData.push({
+        name:String(r[1]||''),qty:parseFloat(r[2])||0,unit:String(r[3]||''),
+        coeff:parseFloat(r[4])||0,emission:parseFloat(r[5])||0,
+        date:String(r[6]||''),grade:GN[r[7]]||2,files:[]
+      });
+    });
+
+    // ── 廢棄物 ──
+    // 欄位：記錄ID,類型,量,處理方式,排放量,供應商,日期,等級
+    var wstRows = await readSheet('廢棄物');
+    wstRows.forEach(function(r){
+      if(!r[1]) return;
+      wstData.push({
+        type:String(r[1]||''),qty:parseFloat(r[2])||0,method:String(r[3]||''),
+        emission:parseFloat(r[4])||0,supp:String(r[5]||''),
+        date:String(r[6]||''),grade:GN[r[7]]||2,files:[]
+      });
+    });
+
+    // ── 運輸車輛 ──
+    // 欄位：記錄ID,用途,車牌,車型,出發地,目的地,距離,排放量,日期,等級
+    var trpRows = await readSheet('運輸車輛');
+    trpRows.forEach(function(r){
+      if(!r[1]) return;
+      trpData.push({
+        typeName:String(r[1]||''),plate:String(r[2]||''),vtypeName:String(r[3]||''),
+        from:String(r[4]||''),to:String(r[5]||''),dist:parseFloat(r[6])||0,
+        emission:parseFloat(r[7])||0,date:String(r[8]||''),
+        grade:GN[r[9]]||2,files:[]
+      });
+    });
+
+    // ── 人員現場 ──
+    // 欄位：記錄ID,類別,人數,工時,現場碳排,日期,等級
+    var perRows = await readSheet('人員現場');
+    perRows.forEach(function(r){
+      if(!r[1]) return;
+      var site = parseFloat(r[4])||0;
+      perData.push({
+        cat:String(r[1]||''),n:parseFloat(r[2])||0,h:parseFloat(r[3])||0,
+        site:site,emission:site,
+        date:String(r[5]||''),grade:GN[r[6]]||2,files:[]
+      });
+    });
+
+    // 重新渲染
+    renderMT();renderET();renderWT();renderTT();renderPT();
+    buildMatSel();buildEngSel();syncElecCoeffToLC();
+    updateDash();
+
+    var total=matData.length+engData.length+wstData.length+trpData.length+perData.length;
+    if(status){
+      status.textContent='✅ 從 Sheets 載入完成！共 '+total+' 筆記錄（'+new Date().toLocaleTimeString('zh-TW')+'）';
+      status.style.color='var(--grn-t)';
+    }
+
+  }catch(e){
+    console.error('loadFromSheets error:',e);
+    if(status){status.textContent='❌ 載入失敗：'+e.message;status.style.color='var(--red-t)';}
+  }
+}
+
 async function syncAllToSheets(){
   if(!gdriveToken){
     alert('請先連結 Google Drive');
