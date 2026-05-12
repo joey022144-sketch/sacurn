@@ -310,7 +310,17 @@ tbody tr:hover td{background:var(--acc-dim)}
   <div class="alert al-pur" style="margin-bottom:12px">
     📋 將廠商 LINE 訊息、日報截圖或任何工地對話貼入下方，AI 自動識別並填入對應欄位。
   </div>
-  <div class="alert al-g" style="margin-bottom:12px">✅ AI 辨識由 Google Gemini 提供（免費，每天 1500 次）</div>
+  <div class="card" style="margin-bottom:12px">
+    <div class="card-hd"><div class="card-ttl">🔑 Gemini API Key</div></div>
+    <div class="alert al-b" style="margin-bottom:10px">Key 儲存在雲端，換電腦後點「從 Sheets 載入」即可還原。<a href="https://aistudio.google.com/apikey" target="_blank" style="color:var(--acc-t)">申請免費 Key↗</a></div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <input type="password" id="gemini-key-inp" placeholder="AIza..." 
+        style="flex:1;padding:8px 12px;font-size:13px;border:1px solid var(--bdr2);border-radius:6px;background:#141820;color:var(--txt);font-family:monospace;outline:none">
+      <button class="btn btn-p btn-sm" onclick="saveGeminiKey()">儲存</button>
+      <button class="btn btn-sm" onclick="toggleGeminiKeyVis()">👁</button>
+      <span id="gemini-key-status" style="font-size:12px;color:var(--hint)">未設定</span>
+    </div>
+  </div>
 
   <!-- 輸入區 -->
   <div class="card">
@@ -895,7 +905,7 @@ function nav(p,btn){
   document.getElementById('TBT').textContent=t[p]||p;
   if(p==='dash')updateDash();
   if(p==='input'){buildMatSel();buildEngSel();buildVtypeSel();}
-  if(p==='parse'){buildMatSel();buildEngSel();initApiKey();}
+  if(p==='parse'){buildMatSel();buildEngSel();updateGeminiKeyStatus();}
   if(p==='set-eng'){renderEngPanels();}
   if(p==='set-mat'){renderMatSet();}
   if(p==='set-vtype'){renderVtypeSet();}
@@ -957,10 +967,11 @@ function applyMC(){const m=matDB.find(x=>x.id===document.getElementById('I-mc').
 var parsedItems = []; // 儲存解析結果
 
 // Gemini API
-var GEMINI_KEY = 'AIzaSyAkoK09_tw5mbAyBAaw2L8p31CV8Wt99Og';
+var GEMINI_KEY = localStorage.getItem('sacurn_gemini_key')||'';
 var GEMINI_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent';
 
 async function callGemini(prompt, imageBase64, imageMime){
+  if(!GEMINI_KEY){ throw new Error('請先設定 Gemini API Key'); }
   var parts = [{text:prompt}];
   if(imageBase64) parts.unshift({inline_data:{mime_type:imageMime,data:imageBase64}});
   var resp = await fetch(GEMINI_URL,{
@@ -972,6 +983,71 @@ async function callGemini(prompt, imageBase64, imageMime){
   if(data.error) throw new Error(data.error.message);
   return data.candidates[0].content.parts[0].text;
 }
+
+// ══ Gemini Key 管理 ══
+function saveGeminiKey(){
+  var val = document.getElementById('gemini-key-inp').value.trim();
+  if(!val){ alert('請輸入 API Key'); return; }
+  localStorage.setItem('sacurn_gemini_key', val);
+  GEMINI_KEY = val;
+  updateGeminiKeyStatus();
+  // 同時存到 Sheets（如果已連結）
+  if(gdriveToken && SHEET_ID){
+    saveKeyToSheets(val);
+  }
+  alert('✅ Key 已儲存！');
+}
+
+function updateGeminiKeyStatus(){
+  var key = localStorage.getItem('sacurn_gemini_key')||'';
+  GEMINI_KEY = key;
+  var inp = document.getElementById('gemini-key-inp');
+  var status = document.getElementById('gemini-key-status');
+  if(inp && key) inp.value = key;
+  if(status){
+    status.textContent = key ? '✅ 已設定' : '⚠ 未設定';
+    status.style.color = key ? 'var(--grn-t)' : 'var(--amb-t)';
+  }
+}
+
+function toggleGeminiKeyVis(){
+  var inp = document.getElementById('gemini-key-inp');
+  if(inp) inp.type = inp.type==='password'?'text':'password';
+}
+
+// 儲存 Key 到 Sheets（盤查摘要工作表的特定儲存格）
+async function saveKeyToSheets(key){
+  try{
+    var range = encodeURIComponent('盤查摘要!Z1');
+    await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+range+'?valueInputOption=RAW',
+      {method:'PUT', headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+       body:JSON.stringify({values:[['GEMINI_KEY:'+key]]})}
+    );
+  }catch(e){ console.warn('saveKeyToSheets error:',e); }
+}
+
+// 從 Sheets 讀取 Key
+async function loadKeyFromSheets(){
+  if(!gdriveToken || !SHEET_ID) return;
+  try{
+    var range = encodeURIComponent('盤查摘要!Z1');
+    var resp = await fetch(
+      'https://sheets.googleapis.com/v4/spreadsheets/'+SHEET_ID+'/values/'+range,
+      {headers:{Authorization:'Bearer '+gdriveToken}}
+    );
+    var data = await resp.json();
+    var val = data.values&&data.values[0]&&data.values[0][0]||'';
+    if(val.startsWith('GEMINI_KEY:')){
+      var key = val.replace('GEMINI_KEY:','');
+      localStorage.setItem('sacurn_gemini_key', key);
+      GEMINI_KEY = key;
+      updateGeminiKeyStatus();
+      console.log('Gemini Key loaded from Sheets');
+    }
+  }catch(e){ console.warn('loadKeyFromSheets error:',e); }
+}
+
 function initApiKey(){}
 
 // 民國年轉西元
@@ -3030,6 +3106,8 @@ async function loadFromSheets(){
     updateDash();
 
     var total=matData.length+engData.length+wstData.length+trpData.length+perData.length;
+    // 同時從 Sheets 載入 Gemini Key
+    await loadKeyFromSheets();
     if(status){
       status.textContent='✅ 從 Sheets 載入完成！共 '+total+' 筆記錄（'+new Date().toLocaleTimeString('zh-TW')+'）';
       status.style.color='var(--grn-t)';
