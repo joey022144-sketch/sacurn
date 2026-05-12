@@ -1007,6 +1007,9 @@ async function parseFromImage(inp){
   try{
     var text = await callGemini(PARSE_PROMPT, base64, file.type);
     document.getElementById('parse-text').value = '（圖片內容已識別）';
+    // 同時把截圖存起來，等解析完後加入佐證
+    window._parseImgDataURL = dataURL;
+    window._parseImgFile = {name:file.name, size:(file.size/1024).toFixed(1), ext:file.name.split('.').pop().toUpperCase(), mime:file.type, isImage:true, dataURL:dataURL, isDrive:false};
     processParsedJSON(text);
   }catch(e){
     document.getElementById('parse-loading').style.display='none';
@@ -1195,6 +1198,41 @@ function applyAllParsed(){
 }
 
 // 把解析結果轉成記錄並新增
+
+// 把解析截圖加入記錄的 files，並上傳到 Drive 日期資料夾
+function attachParseImg(rec, dateStr){
+  if(!window._parseImgFile) return;
+  var imgFile = Object.assign({}, window._parseImgFile);
+  rec.files.push(imgFile);
+  // 非同步上傳到 Drive
+  if(imgFile.dataURL && gdriveToken){
+    getDateFolder(dateStr||'').then(function(fid){
+      var parts = imgFile.dataURL.split(',');
+      var mime = (parts[0].match(/:(.*?);/)||[])[1]||'image/jpeg';
+      var bstr = atob(parts[1]);
+      var u8 = new Uint8Array(bstr.length);
+      for(var bi=0;bi<bstr.length;bi++) u8[bi]=bstr.charCodeAt(bi);
+      var blob = new Blob([u8],{type:mime});
+      var meta = {name:imgFile.name, parents:fid?[fid]:[]};
+      var form = new FormData();
+      form.append('metadata', new Blob([JSON.stringify(meta)],{type:'application/json'}));
+      form.append('file', blob, imgFile.name);
+      fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
+        {method:'POST', headers:{Authorization:'Bearer '+gdriveToken}, body:form})
+      .then(function(r){return r.json();})
+      .then(function(d){
+        if(d.id){
+          imgFile.isDrive=true; imgFile.driveId=d.id;
+          imgFile.driveViewLink=d.webViewLink;
+          imgFile.driveDownloadLink='https://drive.google.com/uc?export=download&id='+d.id;
+          imgFile.driveThumbLink='https://drive.google.com/thumbnail?id='+d.id+'&sz=w400';
+          saveToStorage();
+        }
+      }).catch(function(e){console.warn('attach img upload error:',e);});
+    });
+  }
+}
+
 function addParsedRecord(r){
   var f = r.fields||{};
   var date = r._date||new Date().toISOString().split('T')[0];
@@ -1209,6 +1247,7 @@ function addParsedRecord(r){
       });
       var qty = parseFloat(f.qty)||0;
       var rec = {name:f.name||'未知材料',qty:qty,unit:matUnit,coeff:matCoeff,sup:f.sup||'—',grade:2,date:date.replace(/-/g,'/'),emission:qty*matCoeff,files:[]};
+      attachParseImg(rec, date);
       matData.push(rec);
       renderMT(); updateDash();
       syncToSheets('mat',rec); syncSummaryToSheets();
@@ -1219,6 +1258,7 @@ function addParsedRecord(r){
       var qty2 = parseFloat(f.qty)||0;
       var coeff2 = engObj?engObj.coeff:0;
       var rec2 = {name:engObj?engObj.name:f.energy_type||'未知能源',unit:f.unit||(engObj?engObj.unit:'L'),qty:qty2,coeff:coeff2,grade:2,date:date.replace(/-/g,'/'),emission:qty2*coeff2,files:[]};
+      attachParseImg(rec2, date);
       engData.push(rec2);
       renderET(); updateDash();
       syncToSheets('eng',rec2); syncSummaryToSheets();
@@ -1229,6 +1269,7 @@ function addParsedRecord(r){
       var c2 = wstCoeff2?wstCoeff2.coeff:0.5;
       var qty3 = parseFloat(f.qty)||0;
       var rec3 = {type:f.waste_type||'一般廢棄物',qty:qty3,method:wstCoeff2?wstCoeff2.name:'掩埋',supp:f.supp||'—',grade:2,date:date.replace(/-/g,'/'),emission:qty3*1000*c2,files:[]};
+      attachParseImg(rec3, date);
       wstData.push(rec3);
       renderWT(); updateDash();
       syncToSheets('wst',rec3); syncSummaryToSheets();
@@ -1243,6 +1284,7 @@ function addParsedRecord(r){
       var load2 = parseFloat(f.load)||0;
       var em2 = isPer2?pcount2*dist2*2*coeff3:dist2*load2*coeff3;
       var rec4 = {typeName:f.purpose||'材料運輸',plate:f.plate||'—',vtypeName:vt2?vt2.name:f.vehicle||'—',from:f.from||'—',to:f.to||'—',dist:dist2,trips:1,coeff:coeff3,load:load2,pcount:pcount2,isPer:isPer2,grade:2,date:date.replace(/-/g,'/'),emission:em2,files:[]};
+      attachParseImg(rec4, date);
       trpData.push(rec4);
       renderTT(); updateDash();
       syncToSheets('trp',rec4); syncSummaryToSheets();
@@ -1253,6 +1295,7 @@ function addParsedRecord(r){
       var h2 = parseFloat(f.hours)||8;
       var site2 = n2*h2*(perCoeffDB.coeff||0.082);
       var rec5 = {cat:f.category||'施工工人',n:n2,h:h2,site:site2,emission:site2,grade:2,date:date.replace(/-/g,'/'),files:[]};
+      attachParseImg(rec5, date);
       perData.push(rec5);
       renderPT(); updateDash();
       syncToSheets('per',rec5); syncSummaryToSheets();
@@ -1567,21 +1610,48 @@ function triggerAI(cat){document.getElementById(cat+'-ai-inp').click();}
 function removePend(cat,i){pendingFiles[cat].splice(i,1);renderChips(cat);}
 
 // Drive 上傳：最直接的實作
+// 取得或建立日期子資料夾
+var dateFolderCache = {};
+async function getDateFolder(dateStr){
+  if(!gdriveFolderId || !gdriveToken) return gdriveFolderId;
+  // dateStr 格式：YYYY/MM/DD 或 YYYY-MM-DD
+  var folderName = dateStr ? dateStr.replace(/\//g,'-').substring(0,10) : new Date().toISOString().split('T')[0];
+  if(dateFolderCache[folderName]) return dateFolderCache[folderName];
+  try{
+    // 查詢是否已有此日期資料夾
+    var q = encodeURIComponent("'"+gdriveFolderId+"' in parents and name='"+folderName+"' and mimeType='application/vnd.google-apps.folder' and trashed=false");
+    var resp = await fetch('https://www.googleapis.com/drive/v3/files?q='+q+'&fields=files(id,name)',
+      {headers:{Authorization:'Bearer '+gdriveToken}});
+    var data = await resp.json();
+    if(data.files && data.files.length){
+      dateFolderCache[folderName] = data.files[0].id;
+      return data.files[0].id;
+    }
+    // 建立新的日期資料夾
+    var createResp = await fetch('https://www.googleapis.com/drive/v3/files',{
+      method:'POST',
+      headers:{Authorization:'Bearer '+gdriveToken,'Content-Type':'application/json'},
+      body:JSON.stringify({name:folderName,mimeType:'application/vnd.google-apps.folder',parents:[gdriveFolderId]})
+    });
+    var createData = await createResp.json();
+    if(createData.id){
+      dateFolderCache[folderName] = createData.id;
+      return createData.id;
+    }
+  }catch(e){ console.warn('getDateFolder error:',e); }
+  return gdriveFolderId; // 失敗就放根資料夾
+}
+
 async function driveUploadFiles(cat, inp){
   var files = Array.from(inp.files);
   if(!files.length) return;
   var status = document.getElementById('gdrive-status');
 
-  // 如果沒有 token，先授權
-  if(!gdriveToken){
-    if(status) status.textContent = '請先連結 Google Drive';
-    inp.value='';
-    return;
-  }
-
-  // 確保有資料夾
-  if(!gdriveFolderId){
+  // 沒有 token 就存本機，有 token 就上傳到 Drive
+  var useDriveUpload = !!gdriveToken;
+  if(useDriveUpload && !gdriveFolderId){
     await gdriveEnsureFolder();
+    if(!gdriveFolderId) useDriveUpload = false;
   }
 
   for(var i=0; i<files.length; i++){
@@ -1595,43 +1665,44 @@ async function driveUploadFiles(cat, inp){
       reader.readAsDataURL(f);
     });
 
-    // 上傳到 Drive
-    try{
-      var metadata = {name: f.name};
-      if(gdriveFolderId) metadata.parents = [gdriveFolderId];
-      var form = new FormData();
-      form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
-      form.append('file', f);
-      var resp = await fetch(
-        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
-        {method:'POST', headers:{Authorization:'Bearer '+gdriveToken}, body:form}
-      );
-      var data = await resp.json();
-
-      if(data.id){
-        pendingFiles[cat].push({
-          name: f.name,
-          size: (f.size/1024).toFixed(1),
-          ext: f.name.split('.').pop().toUpperCase(),
-          mime: f.type,
-          isImage: f.type.startsWith('image/'),
-          isDrive: true,
-          driveId: data.id,
-          driveViewLink: data.webViewLink,
-          driveDownloadLink: 'https://drive.google.com/uc?export=download&id='+data.id,
-          driveThumbLink: f.type.startsWith('image/') ? 'https://drive.google.com/thumbnail?id='+data.id+'&sz=w400' : null,
-          dataURL: dataURL
-        });
-        if(status){ status.textContent='✅ 已上傳：'+f.name; status.style.color='var(--grn-t)';}
-      } else {
-        // Drive 失敗存本機
+    if(useDriveUpload){
+      // 上傳到 Drive（日期子資料夾）
+      try{
+        var targetFolderId = await getDateFolder('');
+        var metadata = {name: f.name};
+        if(targetFolderId) metadata.parents = [targetFolderId];
+        var form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(metadata)], {type:'application/json'}));
+        form.append('file', f);
+        var resp = await fetch(
+          'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
+          {method:'POST', headers:{Authorization:'Bearer '+gdriveToken}, body:form}
+        );
+        var data = await resp.json();
+        if(data.id){
+          pendingFiles[cat].push({
+            name:f.name, size:(f.size/1024).toFixed(1),
+            ext:f.name.split('.').pop().toUpperCase(),
+            mime:f.type, isImage:f.type.startsWith('image/'),
+            isDrive:true, driveId:data.id,
+            driveViewLink:data.webViewLink,
+            driveDownloadLink:'https://drive.google.com/uc?export=download&id='+data.id,
+            driveThumbLink:f.type.startsWith('image/')?'https://drive.google.com/thumbnail?id='+data.id+'&sz=w400':null,
+            dataURL:dataURL
+          });
+          if(status){status.textContent='✅ 已上傳至 Drive：'+f.name;status.style.color='var(--grn-t)';}
+        } else {
+          pendingFiles[cat].push({name:f.name,size:(f.size/1024).toFixed(1),ext:f.name.split('.').pop().toUpperCase(),mime:f.type,isImage:f.type.startsWith('image/'),isDrive:false,dataURL:dataURL});
+          if(status){status.textContent='⚠ Drive失敗，存本機：'+f.name;status.style.color='var(--amb-t)';}
+        }
+      }catch(e){
         pendingFiles[cat].push({name:f.name,size:(f.size/1024).toFixed(1),ext:f.name.split('.').pop().toUpperCase(),mime:f.type,isImage:f.type.startsWith('image/'),isDrive:false,dataURL:dataURL});
-        if(status){ status.textContent='⚠ Drive失敗，存本機：'+f.name; status.style.color='var(--amb-t)';}
-        console.warn('Drive upload failed:', data);
+        console.warn('Drive upload error:',e);
       }
-    } catch(e){
+    } else {
+      // 存本機（沒有連結 Drive）
       pendingFiles[cat].push({name:f.name,size:(f.size/1024).toFixed(1),ext:f.name.split('.').pop().toUpperCase(),mime:f.type,isImage:f.type.startsWith('image/'),isDrive:false,dataURL:dataURL});
-      console.warn('Drive upload error:', e);
+      if(status){status.textContent='💾 已存本機：'+f.name+'（連結 Drive 可同步至雲端）';status.style.color='var(--hint)';}
     }
   }
   renderChips(cat);
