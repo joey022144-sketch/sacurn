@@ -328,10 +328,11 @@ tbody tr:hover td{background:var(--acc-dim)}
       <div class="card-ttl">輸入對話內容</div>
       <div style="display:flex;gap:8px">
         <label class="btn btn-sm" style="cursor:pointer;display:flex;align-items:center;gap:5px;border-color:var(--pur);color:var(--pur-t)">
-          🖼 上傳截圖
-          <input type="file" id="parse-img-inp" accept="image/*" style="display:none" onchange="parseFromImage(this)">
+          🖼 上傳截圖（可多張）
+          <input type="file" id="parse-img-inp" accept="image/*" multiple style="display:none" onchange="parseFromImages(this)">
         </label>
         <button class="btn btn-p btn-sm" onclick="parseDialogue()">🤖 AI 解析</button>
+        <button class="btn btn-sm" onclick="parseBatch()" style="border-color:var(--pur);color:var(--pur-t)">📅 批次解析（多天）</button>
       </div>
     </div>
     <div class="fg" style="margin-bottom:6px">
@@ -1062,6 +1063,88 @@ function rocToAD(text){
 }
 
 // 從圖片 OCR + 解析
+
+// ══ 多張截圖解析 ══
+var _parseImgFiles = []; // 存放所有截圖
+
+async function parseFromImages(inp){
+  var files = Array.from(inp.files);
+  if(!files.length) return;
+  inp.value = '';
+
+  _parseImgFiles = [];
+  document.getElementById('parse-loading').style.display='block';
+  document.getElementById('parse-result').style.display='none';
+  document.getElementById('parse-log').style.display='none';
+
+  // 讀取所有圖片的 dataURL
+  for(var i=0; i<files.length; i++){
+    var f = files[i];
+    var dataURL = await new Promise(function(res){
+      var reader = new FileReader();
+      reader.onload = function(e){ res(e.target.result); };
+      reader.readAsDataURL(f);
+    });
+    _parseImgFiles.push({
+      name: f.name, size:(f.size/1024).toFixed(1),
+      ext: f.name.split('.').pop().toUpperCase(),
+      mime: f.type, isImage: true,
+      dataURL: dataURL, isDrive: false
+    });
+  }
+
+  // 合併所有圖片一次送 Gemini
+  try{
+    var parts = [];
+    _parseImgFiles.forEach(function(fobj){
+      var base64 = fobj.dataURL.split(',')[1];
+      parts.push({inline_data:{mime_type:fobj.mime, data:base64}});
+    });
+    parts.push({text: PARSE_PROMPT + '\n\n以上共 '+_parseImgFiles.length+' 張截圖，請合併分析所有圖片的內容。'});
+
+    if(!GEMINI_KEY) throw new Error('請先設定 Gemini API Key');
+    var resp = await fetch(GEMINI_URL, {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-goog-api-key':GEMINI_KEY},
+      body: JSON.stringify({contents:[{parts:parts}], generationConfig:{temperature:0.1,maxOutputTokens:8192}})
+    });
+    var data = await resp.json();
+    if(data.error) throw new Error(data.error.message);
+    var text = data.candidates[0].content.parts[0].text;
+
+    document.getElementById('parse-text').value = '（已上傳 '+_parseImgFiles.length+' 張截圖）';
+    window._parseImgFile = _parseImgFiles[0]; // 第一張作為主要佐證
+    window._parseImgFiles = _parseImgFiles;   // 全部截圖
+    processParsedJSON(text);
+  }catch(e){
+    document.getElementById('parse-loading').style.display='none';
+    alert('解析失敗：'+e.message);
+  }
+}
+
+// ══ 批次匯入多天日報 ══
+async function parseBatch(){
+  var text = document.getElementById('parse-text').value.trim();
+  if(!text){ alert('請先輸入對話內容'); return; }
+  if(!GEMINI_KEY){ alert('請先設定 Gemini API Key'); return; }
+
+  document.getElementById('parse-loading').style.display='block';
+  document.getElementById('parse-result').style.display='none';
+  document.getElementById('parse-log').style.display='none';
+
+  var batchPrompt = PARSE_PROMPT
+    + '\n\n注意：以下可能包含多天的日報，請分別識別每天的資料，每天產生獨立的 records 並標上正確日期。'
+    + '\n\n以下是對話內容：\n' + text;
+
+  try{
+    var result = await callGemini(batchPrompt);
+    processParsedJSON(result);
+  }catch(e){
+    document.getElementById('parse-loading').style.display='none';
+    alert('解析失敗：'+e.message);
+  }
+}
+
 async function parseFromImage(inp){
   var file = inp.files[0];
   if(!file) return;
@@ -1111,7 +1194,7 @@ async function parseDialogue(){
   }
 }
 
-var PARSE_PROMPT = '你是建築工地碳足跡盤查助理。分析以下工地對話或日報，識別出可填入碳足跡記錄的資訊。\n'
+var PARSE_PROMPT = '你是建築工地碳足跡盤查助理。分析以下工地對話或日報，識別出可填入碳足跡記錄的資訊。所有欄位值必須使用繁體中文回答，禁止使用英文。\n'
   +'民國年換算：民國年+1911=西元年（例：115年=2026年）。\n'
   +'請以純 JSON 格式回應（不含說明、不含markdown），格式如下：\n'
   +'{\n'
@@ -1277,36 +1360,39 @@ function applyAllParsed(){
 
 // 把解析截圖加入記錄的 files，並上傳到 Drive 日期資料夾
 function attachParseImg(rec, dateStr){
-  if(!window._parseImgFile) return;
-  var imgFile = Object.assign({}, window._parseImgFile);
-  rec.files.push(imgFile);
+  var imgs = window._parseImgFiles || (window._parseImgFile ? [window._parseImgFile] : []);
+  if(!imgs.length) return;
+  imgs.forEach(function(src){
+    var imgFile = Object.assign({}, src);
+    rec.files.push(imgFile);
   // 非同步上傳到 Drive
   if(imgFile.dataURL && gdriveToken){
-    getDateFolder(dateStr||'').then(function(fid){
-      var parts = imgFile.dataURL.split(',');
-      var mime = (parts[0].match(/:(.*?);/)||[])[1]||'image/jpeg';
-      var bstr = atob(parts[1]);
-      var u8 = new Uint8Array(bstr.length);
-      for(var bi=0;bi<bstr.length;bi++) u8[bi]=bstr.charCodeAt(bi);
-      var blob = new Blob([u8],{type:mime});
-      var meta = {name:imgFile.name, parents:fid?[fid]:[]};
-      var form = new FormData();
-      form.append('metadata', new Blob([JSON.stringify(meta)],{type:'application/json'}));
-      form.append('file', blob, imgFile.name);
-      fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
-        {method:'POST', headers:{Authorization:'Bearer '+gdriveToken}, body:form})
-      .then(function(r){return r.json();})
-      .then(function(d){
-        if(d.id){
-          imgFile.isDrive=true; imgFile.driveId=d.id;
-          imgFile.driveViewLink=d.webViewLink;
-          imgFile.driveDownloadLink='https://drive.google.com/uc?export=download&id='+d.id;
-          imgFile.driveThumbLink='https://drive.google.com/thumbnail?id='+d.id+'&sz=w400';
-          saveToStorage();
-        }
-      }).catch(function(e){console.warn('attach img upload error:',e);});
-    });
-  }
+      getDateFolder(dateStr||'').then(function(fid){
+        var parts = imgFile.dataURL.split(',');
+        var mime = (parts[0].match(/:(.*?);/)||[])[1]||'image/jpeg';
+        var bstr = atob(parts[1]);
+        var u8 = new Uint8Array(bstr.length);
+        for(var bi=0;bi<bstr.length;bi++) u8[bi]=bstr.charCodeAt(bi);
+        var blob = new Blob([u8],{type:mime});
+        var meta = {name:imgFile.name, parents:fid?[fid]:[]};
+        var form = new FormData();
+        form.append('metadata', new Blob([JSON.stringify(meta)],{type:'application/json'}));
+        form.append('file', blob, imgFile.name);
+        fetch('https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id,name,webViewLink',
+          {method:'POST', headers:{Authorization:'Bearer '+gdriveToken}, body:form})
+        .then(function(r){return r.json();})
+        .then(function(d){
+          if(d.id){
+            imgFile.isDrive=true; imgFile.driveId=d.id;
+            imgFile.driveViewLink=d.webViewLink;
+            imgFile.driveDownloadLink='https://drive.google.com/uc?export=download&id='+d.id;
+            imgFile.driveThumbLink='https://drive.google.com/thumbnail?id='+d.id+'&sz=w400';
+            saveToStorage();
+          }
+        }).catch(function(e){console.warn('attach img upload error:',e);});
+      });
+    }
+  }); // end forEach
 }
 
 function addParsedRecord(r){
@@ -2135,8 +2221,10 @@ function renderEvSummary(){
           <td style="color:var(--muted);font-size:12px;overflow:hidden;text-overflow:ellipsis">${rec.name||rec.typeName||rec.type||rec.cat||'—'}　${rec.date||''}</td>
           <td>${rec.date||'—'}</td><td style="color:var(--hint)">${f.size}KB</td>
           <td><div style="display:flex;gap:4px">
-            <button class="ev-chip-btn" onclick="openFileModalByRec('${cat}',${ri},${fi})" ${!f.dataURL?'disabled':''}>👁</button>
-            <button class="ev-chip-btn" onclick="if('${f.dataURL}'&&'${f.dataURL}'!=='undefined')downloadFile('${f.dataURL}','${f.name}')" ${!f.dataURL?'disabled':''}>⬇</button>
+            ${f.isDrive&&f.driveViewLink
+              ? `<a class="ev-chip-btn" href="${f.driveViewLink}" target="_blank">👁</a><a class="ev-chip-btn" href="${f.driveDownloadLink}" target="_blank">⬇</a>`
+              : `<button class="ev-chip-btn" onclick="openFileModalByRec('${cat}',${ri},${fi})" ${!f.dataURL?'disabled':''}>👁</button><button class="ev-chip-btn" onclick="if(this.dataset.url)downloadFile(this.dataset.url,'${f.name}')" data-url="${f.dataURL||''}" ${!f.dataURL?'disabled':''}>⬇</button>`
+            }
           </div></td>
         </tr>`).join('')}</tbody>
       </table></div>
